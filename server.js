@@ -89,7 +89,7 @@ server.listen(PORT, HOST, () => {
   console.log(`Server accessible at:`);
   console.log(`  - http://localhost:${PORT}`);
   console.log(`  - http://127.0.0.1:${PORT}`);
-  console.log(`  - http://192.168.1.18:${PORT} (Android Emulator)`);
+  console.log(`  - http://192.168.29.194:${PORT} (Android Emulator)`);
   console.log(`  - http://<your-ip>:${PORT} (Physical devices on same network)`);
   console.log(`  - Socket.IO enabled on same host/port`);
 });

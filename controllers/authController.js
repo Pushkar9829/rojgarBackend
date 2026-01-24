@@ -34,7 +34,9 @@ const sendOTPToUser = async (req, res, next) => {
     console.log('[authController] Invalidated previous OTPs:', invalidated.modifiedCount);
 
     // Generate new OTP
-    const otp = generateOTP(6);
+    // NOTE: For development/testing we use a hard-coded OTP.
+    // Change this back to `generateOTP(6)` for production.
+    const otp = '123456';
     const expiresAt = new Date(Date.now() + (process.env.OTP_EXPIRE_MINUTES || 15) * 60 * 1000);
     console.log('[authController] Generated OTP:', otp, 'Expires at:', expiresAt);
 
