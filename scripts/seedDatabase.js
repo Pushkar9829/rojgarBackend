@@ -684,6 +684,18 @@ const seedDatabase = async () => {
     // Seed Device entries for users (mock FCM tokens - unique for each user)
     // Note: playerId is omitted to avoid duplicate key errors with null values
     console.log('Seeding device entries...');
+    
+    // Try to drop unique index on playerId if it exists (to allow multiple nulls)
+    try {
+      await Device.collection.dropIndex('playerId_1');
+      console.log('  Dropped existing unique index on playerId\n');
+    } catch (error) {
+      // Index doesn't exist or can't be dropped - continue
+      if (error.code !== 27 && error.code !== 85) { // 27 = IndexNotFound, 85 = IndexOptionsConflict
+        console.log('  Note: Could not drop playerId index (this is OK if it doesn\'t exist)\n');
+      }
+    }
+    
     const deviceEntries = createdUsers.map((user, index) => {
       const timestamp = Date.now();
       const random = Math.random().toString(36).substring(7);
@@ -695,6 +707,7 @@ const seedDatabase = async () => {
         // playerId is intentionally omitted - it's optional and causes duplicate key errors when null
       };
     });
+    
     const createdDevices = await Device.insertMany(deviceEntries);
     console.log(`✓ Created ${createdDevices.length} device entries\n`);
 
