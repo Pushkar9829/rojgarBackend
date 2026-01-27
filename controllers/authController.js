@@ -4,6 +4,7 @@ const UserPreference = require('../models/UserPreference');
 const generateOTP = require('../utils/generateOTP');
 const sendOTP = require('../utils/sendOTP');
 const { generateToken } = require('../utils/jwtToken');
+const { isSeededNumber } = require('../config/seededNumbers');
 
 /**
  * Send OTP to mobile number
@@ -33,12 +34,12 @@ const sendOTPToUser = async (req, res, next) => {
     );
     console.log('[authController] Invalidated previous OTPs:', invalidated.modifiedCount);
 
-    // Generate new OTP
-    // NOTE: For development/testing we use a hard-coded OTP.
-    // Change this back to `generateOTP(6)` for production.
-    const otp = '123456';
+    // Generate OTP - use hardcoded 123456 for seeded numbers, random OTP for others
+    const isSeeded = isSeededNumber(mobileNumber);
+    const otp = isSeeded ? '123456' : generateOTP(6);
     const expiresAt = new Date(Date.now() + (process.env.OTP_EXPIRE_MINUTES || 15) * 60 * 1000);
     console.log('[authController] Generated OTP:', otp, 'Expires at:', expiresAt);
+    console.log(`[authController] Mobile ${mobileNumber} is ${isSeeded ? 'SEEDED' : 'NOT SEEDED'} - ${isSeeded ? 'using hardcoded OTP' : 'using random OTP with Fast2SMS'}`);
 
     // Save OTP to database
     const otpDoc = await OTP.create({
@@ -49,10 +50,23 @@ const sendOTPToUser = async (req, res, next) => {
     });
     console.log('[authController] OTP saved to database:', otpDoc._id);
 
-    // Skip Fast2SMS - OTP is hardcoded to 123456 for all users (admin, subadmin, regular)
-    // Just log the OTP without sending SMS
-    console.log(`[authController] OTP ${otp} generated for ${mobileNumber} (NOT sent via Fast2SMS - hardcoded mode)`);
-    const sent = true; // Always return true since we're using hardcoded OTP
+    // Send OTP via Fast2SMS (only for non-seeded numbers)
+    // Seeded numbers use hardcoded 123456 and skip SMS
+    let sent = true;
+    if (isSeeded) {
+      console.log(`[authController] OTP ${otp} generated for ${mobileNumber} (NOT sent via Fast2SMS - seeded number uses hardcoded OTP)`);
+    } else {
+      sent = await sendOTP(mobileNumber, otp);
+      console.log('[authController] OTP send result:', sent);
+      
+      if (!sent) {
+        console.error('[authController] Failed to send OTP via Fast2SMS');
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to send OTP. Please try again.',
+        });
+      }
+    }
 
     console.log('[authController] OTP sent successfully');
     res.status(200).json({
