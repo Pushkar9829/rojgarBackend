@@ -4,6 +4,10 @@ const User = require('../models/User');
 const Job = require('../models/Job');
 const Scheme = require('../models/Scheme');
 const UserPreference = require('../models/UserPreference');
+const Notification = require('../models/Notification');
+const AuditLog = require('../models/AuditLog');
+const Device = require('../models/Device');
+const OTP = require('../models/OTP');
 
 // Connect to MongoDB
 const connectDB = async () => {
@@ -22,7 +26,7 @@ const sampleUsers = [
     mobileNumber: '9876543210',
     role: 'ADMIN',
     adminProfile: {
-      name: 'Admin User',
+      name: 'Super Admin',
       email: 'admin@rojgaalert.com',
       permissions: [
         'CREATE_JOBS',
@@ -35,10 +39,176 @@ const sampleUsers = [
         'MANAGE_ADMINS',
       ],
       assignedStates: [],
+      verificationStatus: 'VERIFIED',
     },
   },
   {
     mobileNumber: '9876543211',
+    role: 'ADMIN',
+    adminProfile: {
+      name: 'Sub Admin - Mumbai',
+      email: 'subadmin.mumbai@rojgaalert.com',
+      permissions: [
+        'CREATE_JOBS',
+        'EDIT_JOBS',
+        'CREATE_SCHEMES',
+        'EDIT_SCHEMES',
+        'VIEW_USERS',
+      ],
+      assignedStates: ['Maharashtra'],
+      verificationStatus: 'VERIFIED',
+    },
+  },
+  {
+    mobileNumber: '9876543212',
+    role: 'ADMIN',
+    adminProfile: {
+      name: 'Sub Admin - New Delhi',
+      email: 'subadmin.newdelhi@rojgaalert.com',
+      permissions: [
+        'CREATE_JOBS',
+        'EDIT_JOBS',
+        'CREATE_SCHEMES',
+        'VIEW_USERS',
+      ],
+      assignedStates: ['Delhi'],
+      verificationStatus: 'VERIFIED',
+    },
+  },
+  {
+    mobileNumber: '9876543213',
+    role: 'ADMIN',
+    adminProfile: {
+      name: 'Sub Admin - Uttar Pradesh',
+      email: 'subadmin.up@rojgaalert.com',
+      permissions: [
+        'CREATE_JOBS',
+        'EDIT_JOBS',
+        'CREATE_SCHEMES',
+        'EDIT_SCHEMES',
+        'VIEW_USERS',
+      ],
+      assignedStates: ['Uttar Pradesh'],
+      verificationStatus: 'VERIFIED',
+    },
+  },
+  {
+    mobileNumber: '9876543214',
+    role: 'ADMIN',
+    adminProfile: {
+      name: 'Sub Admin - Bihar',
+      email: 'subadmin.bihar@rojgaalert.com',
+      permissions: [
+        'CREATE_JOBS',
+        'EDIT_JOBS',
+        'CREATE_SCHEMES',
+        'VIEW_USERS',
+      ],
+      assignedStates: ['Bihar'],
+      verificationStatus: 'VERIFIED',
+    },
+  },
+  {
+    mobileNumber: '9876543215',
+    role: 'ADMIN',
+    adminProfile: {
+      name: 'Sub Admin - Gujarat',
+      email: 'subadmin.gujarat@rojgaalert.com',
+      permissions: [
+        'CREATE_JOBS',
+        'EDIT_JOBS',
+        'CREATE_SCHEMES',
+        'EDIT_SCHEMES',
+        'VIEW_USERS',
+      ],
+      assignedStates: ['Gujarat'],
+      verificationStatus: 'VERIFIED',
+    },
+  },
+  {
+    mobileNumber: '9876543216',
+    role: 'ADMIN',
+    adminProfile: {
+      name: 'Sub Admin - Maharashtra',
+      email: 'subadmin.mh@rojgaalert.com',
+      permissions: [
+        'CREATE_JOBS',
+        'EDIT_JOBS',
+        'CREATE_SCHEMES',
+        'EDIT_SCHEMES',
+        'VIEW_USERS',
+      ],
+      assignedStates: ['Maharashtra'],
+      verificationStatus: 'VERIFIED',
+    },
+  },
+  {
+    mobileNumber: '9876543217',
+    role: 'ADMIN',
+    adminProfile: {
+      name: 'Sub Admin - Delhi',
+      email: 'subadmin.del@rojgaalert.com',
+      permissions: [
+        'CREATE_JOBS',
+        'EDIT_JOBS',
+        'CREATE_SCHEMES',
+        'VIEW_USERS',
+      ],
+      assignedStates: ['Delhi'],
+      verificationStatus: 'VERIFIED',
+    },
+  },
+  {
+    mobileNumber: '9876543218',
+    role: 'ADMIN',
+    adminProfile: {
+      name: 'Sub Admin - Pune',
+      email: 'subadmin.pune@rojgaalert.com',
+      permissions: [
+        'CREATE_JOBS',
+        'EDIT_JOBS',
+        'CREATE_SCHEMES',
+        'VIEW_USERS',
+      ],
+      assignedStates: ['Maharashtra'],
+      verificationStatus: 'VERIFIED',
+    },
+  },
+  {
+    mobileNumber: '9876543219',
+    role: 'ADMIN',
+    adminProfile: {
+      name: 'Sub Admin - Kanpur',
+      email: 'subadmin.kanpur@rojgaalert.com',
+      permissions: [
+        'CREATE_JOBS',
+        'EDIT_JOBS',
+        'VIEW_USERS',
+      ],
+      assignedStates: ['Uttar Pradesh'],
+      verificationStatus: 'VERIFIED',
+    },
+  },
+  {
+    mobileNumber: '9876543220',
+    role: 'ADMIN',
+    adminProfile: {
+      name: 'Sub Admin - Kerala',
+      email: 'subadmin.kerala@rojgaalert.com',
+      permissions: [
+        'CREATE_JOBS',
+        'EDIT_JOBS',
+        'CREATE_SCHEMES',
+        'EDIT_SCHEMES',
+        'VIEW_USERS',
+      ],
+      assignedStates: ['Kerala'],
+      verificationStatus: 'VERIFIED',
+    },
+  },
+  // Regular Users
+  {
+    mobileNumber: '9876543221',
     role: 'USER',
     profile: {
       fullName: 'Rahul Kumar',
@@ -50,7 +220,7 @@ const sampleUsers = [
     },
   },
   {
-    mobileNumber: '9876543212',
+    mobileNumber: '9876543222',
     role: 'USER',
     profile: {
       fullName: 'Priya Sharma',
@@ -62,7 +232,7 @@ const sampleUsers = [
     },
   },
   {
-    mobileNumber: '9876543213',
+    mobileNumber: '9876543223',
     role: 'USER',
     profile: {
       fullName: 'Amit Singh',
@@ -74,7 +244,7 @@ const sampleUsers = [
     },
   },
   {
-    mobileNumber: '9876543214',
+    mobileNumber: '9876543224',
     role: 'USER',
     profile: {
       fullName: 'Sunita Devi',
@@ -86,7 +256,7 @@ const sampleUsers = [
     },
   },
   {
-    mobileNumber: '9876543215',
+    mobileNumber: '9876543225',
     role: 'USER',
     profile: {
       fullName: 'Vikram Patel',
@@ -95,6 +265,42 @@ const sampleUsers = [
       state: 'Gujarat',
       district: 'Ahmedabad',
       preferredDomains: ['Police', 'Defence'],
+    },
+  },
+  {
+    mobileNumber: '9876543226',
+    role: 'USER',
+    profile: {
+      fullName: 'Anjali Mehta',
+      dateOfBirth: new Date('1996-09-12'),
+      education: 'Graduate',
+      state: 'Maharashtra',
+      district: 'Pune',
+      preferredDomains: ['Teaching', 'Health'],
+    },
+  },
+  {
+    mobileNumber: '9876543227',
+    role: 'USER',
+    profile: {
+      fullName: 'Rajesh Yadav',
+      dateOfBirth: new Date('1994-12-05'),
+      education: '12th',
+      state: 'Uttar Pradesh',
+      district: 'Kanpur',
+      preferredDomains: ['Railway', 'Technical'],
+    },
+  },
+  {
+    mobileNumber: '9876543228',
+    role: 'USER',
+    profile: {
+      fullName: 'Kavita Nair',
+      dateOfBirth: new Date('2001-02-28'),
+      education: '10th',
+      state: 'Kerala',
+      district: 'Kochi',
+      preferredDomains: ['Clerk', 'Apprentice'],
     },
   },
 ];
@@ -108,7 +314,7 @@ const sampleJobs = [
     education: '12th',
     ageMin: 18,
     ageMax: 28,
-    lastDate: new Date('2024-12-31'),
+    lastDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
     description: 'Recruitment for Constable position in Maharashtra Police Force. Physical fitness test required.',
     applicationLink: 'https://example.com/police-recruitment',
     vacancyCount: 5000,
@@ -129,7 +335,7 @@ const sampleJobs = [
     education: '10th',
     ageMin: 18,
     ageMax: 33,
-    lastDate: new Date('2024-11-30'),
+    lastDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
     description: 'Indian Railways Group D recruitment for various posts across India.',
     applicationLink: 'https://example.com/railway-recruitment',
     vacancyCount: 10000,
@@ -150,7 +356,7 @@ const sampleJobs = [
     education: '10th',
     ageMin: 17,
     ageMax: 23,
-    lastDate: new Date('2024-10-31'),
+    lastDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
     description: 'Recruitment for Soldier (General Duty) in Indian Army.',
     applicationLink: 'https://example.com/army-recruitment',
     vacancyCount: 50000,
@@ -171,7 +377,7 @@ const sampleJobs = [
     education: 'Graduate',
     ageMin: 21,
     ageMax: 35,
-    lastDate: new Date('2024-11-15'),
+    lastDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
     description: 'Recruitment for Primary Teacher position in Delhi Government Schools.',
     applicationLink: 'https://example.com/teacher-recruitment',
     vacancyCount: 2000,
@@ -192,7 +398,7 @@ const sampleJobs = [
     education: '12th',
     ageMin: 18,
     ageMax: 35,
-    lastDate: new Date('2024-12-20'),
+    lastDate: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000), // 75 days from now
     description: 'Recruitment for Staff Nurse positions in UP Health Department.',
     applicationLink: 'https://example.com/nurse-recruitment',
     vacancyCount: 3000,
@@ -213,7 +419,7 @@ const sampleJobs = [
     education: 'Graduate',
     ageMin: 21,
     ageMax: 37,
-    lastDate: new Date('2024-11-30'),
+    lastDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
     description: 'Recruitment for Junior Clerk positions in Bihar Secretariat.',
     applicationLink: 'https://example.com/clerk-recruitment',
     vacancyCount: 1500,
@@ -234,7 +440,7 @@ const sampleJobs = [
     education: 'ITI',
     ageMin: 18,
     ageMax: 25,
-    lastDate: new Date('2024-10-15'),
+    lastDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000), // 20 days from now
     description: 'Apprenticeship opportunities for ITI candidates in various central government departments.',
     applicationLink: 'https://example.com/apprentice',
     vacancyCount: 5000,
@@ -255,7 +461,7 @@ const sampleJobs = [
     education: 'Graduate',
     ageMin: 21,
     ageMax: 30,
-    lastDate: new Date('2024-12-10'),
+    lastDate: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000), // 50 days from now
     description: 'Recruitment for Technical Assistant positions in Indian Railways.',
     applicationLink: 'https://example.com/technical-assistant',
     vacancyCount: 800,
@@ -403,6 +609,10 @@ const seedDatabase = async () => {
     await Job.deleteMany({});
     await Scheme.deleteMany({});
     await UserPreference.deleteMany({});
+    await Notification.deleteMany({});
+    await AuditLog.deleteMany({});
+    await Device.deleteMany({});
+    await OTP.deleteMany({});
     console.log('Existing data cleared.\n');
 
     // Seed Users
@@ -412,11 +622,14 @@ const seedDatabase = async () => {
 
     // Seed Jobs (need to assign createdBy)
     console.log('Seeding jobs...');
-    const adminUser = createdUsers.find(u => u.role === 'ADMIN');
+    const mainSuperAdmin = createdUsers.find(u => u.mobileNumber === '9876543210');
+    if (!mainSuperAdmin) {
+      throw new Error('Super admin (9876543210) not found in seeded users');
+    }
     const jobsWithCreator = sampleJobs.map(job => ({
       ...job,
-      createdBy: adminUser._id,
-      updatedBy: adminUser._id,
+      createdBy: mainSuperAdmin._id,
+      updatedBy: mainSuperAdmin._id,
     }));
     const createdJobs = await Job.insertMany(jobsWithCreator);
     console.log(`✓ Created ${createdJobs.length} jobs\n`);
@@ -425,16 +638,16 @@ const seedDatabase = async () => {
     console.log('Seeding schemes...');
     const schemesWithCreator = sampleSchemes.map(scheme => ({
       ...scheme,
-      createdBy: adminUser._id,
-      updatedBy: adminUser._id,
+      createdBy: mainSuperAdmin._id,
+      updatedBy: mainSuperAdmin._id,
     }));
     const createdSchemes = await Scheme.insertMany(schemesWithCreator);
     console.log(`✓ Created ${createdSchemes.length} schemes\n`);
 
     // Seed User Preferences for regular users
     console.log('Seeding user preferences...');
-    const regularUsers = createdUsers.filter(u => u.role === 'USER');
-    const userPreferences = regularUsers.map(user => ({
+    const allRegularUsers = createdUsers.filter(u => u.role === 'USER');
+    const userPreferences = allRegularUsers.map(user => ({
       userId: user._id,
       notificationSettings: {
         jobAlerts: true,
@@ -454,15 +667,154 @@ const seedDatabase = async () => {
     await UserPreference.insertMany(userPreferences);
     console.log(`✓ Created ${userPreferences.length} user preferences\n`);
 
+    // Seed OTP entries for all users (OTP: 123456, valid for 1 year)
+    console.log('Seeding OTP entries...');
+    const otpExpiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year from now
+    const otpEntries = createdUsers.map(user => ({
+      mobileNumber: user.mobileNumber,
+      otp: '123456',
+      purpose: 'LOGIN',
+      expiresAt: otpExpiresAt,
+      attempts: 0,
+      isUsed: false,
+    }));
+    const createdOTPs = await OTP.insertMany(otpEntries);
+    console.log(`✓ Created ${createdOTPs.length} OTP entries (all use OTP: 123456)\n`);
+
+    // Seed Device entries for users (mock FCM tokens - unique for each user)
+    console.log('Seeding device entries...');
+    const deviceEntries = createdUsers.map((user, index) => ({
+      userId: user._id,
+      fcmToken: `mock_fcm_token_${user.mobileNumber}_${Date.now()}_${index}_${Math.random().toString(36).substring(7)}`,
+      platform: 'android',
+      lastActiveAt: new Date(),
+    }));
+    const createdDevices = await Device.insertMany(deviceEntries);
+    console.log(`✓ Created ${createdDevices.length} device entries\n`);
+
+    // Seed Notifications for users
+    console.log('Seeding notifications...');
+    const notificationEntries = [];
+    allRegularUsers.forEach((user, index) => {
+      // Add 1-3 notifications per user
+      const notificationCount = (index % 3) + 1;
+      for (let i = 0; i < notificationCount; i++) {
+        const job = createdJobs[index % createdJobs.length];
+        const scheme = createdSchemes[index % createdSchemes.length];
+        
+        if (i === 0 && job) {
+          notificationEntries.push({
+            userId: user._id,
+            type: 'JOB_ALERT',
+            title: 'New job match',
+            body: job.title || 'A new job matching your profile is available.',
+            data: { jobId: job._id.toString() },
+            read: i === 0 ? false : true, // First one unread
+            pushSent: false,
+          });
+        } else if (i === 1 && scheme) {
+          notificationEntries.push({
+            userId: user._id,
+            type: 'SCHEME_ALERT',
+            title: 'New scheme match',
+            body: scheme.name || 'A new scheme matching your profile is available.',
+            data: { schemeId: scheme._id.toString() },
+            read: true,
+            pushSent: false,
+          });
+        } else if (job) {
+          notificationEntries.push({
+            userId: user._id,
+            type: 'JOB_ALERT',
+            title: 'Job reminder',
+            body: `Don't forget to apply for: ${job.title}`,
+            data: { jobId: job._id.toString() },
+            read: true,
+            pushSent: false,
+          });
+        }
+      }
+    });
+    const createdNotifications = await Notification.insertMany(notificationEntries);
+    console.log(`✓ Created ${createdNotifications.length} notifications\n`);
+
+    // Seed Audit Logs for admin actions
+    console.log('Seeding audit logs...');
+    const allAdminUsers = createdUsers.filter(u => u.role === 'ADMIN');
+    const superAdminForAudit = allAdminUsers.find(u => u.mobileNumber === '9876543210');
+    const allSubadminUsers = allAdminUsers.filter(u => u.mobileNumber !== '9876543210');
+    const auditLogEntries = [];
+    
+    // Create audit logs for subadmin verification
+    if (superAdminForAudit) {
+      allSubadminUsers.forEach(subadmin => {
+        auditLogEntries.push({
+          action: 'SUBADMIN_CREATED',
+          performedBy: superAdminForAudit._id,
+          targetUser: subadmin._id,
+          details: {
+            mobileNumber: subadmin.mobileNumber,
+            name: subadmin.adminProfile.name,
+            assignedStates: subadmin.adminProfile.assignedStates,
+          },
+          status: 'SUCCESS',
+        });
+        auditLogEntries.push({
+          action: 'SUBADMIN_VERIFIED',
+          performedBy: superAdminForAudit._id,
+          targetUser: subadmin._id,
+          details: {
+            verificationStatus: 'VERIFIED',
+            verifiedAt: new Date(),
+          },
+          status: 'SUCCESS',
+        });
+      });
+    }
+    
+    const createdAuditLogs = await AuditLog.insertMany(auditLogEntries);
+    console.log(`✓ Created ${createdAuditLogs.length} audit log entries\n`);
+
     console.log('✅ Database seeding completed successfully!');
-    console.log('\nSummary:');
-    console.log(`- Users: ${createdUsers.length} (${createdUsers.filter(u => u.role === 'ADMIN').length} admin, ${createdUsers.filter(u => u.role === 'USER').length} regular)`);
+    console.log('\n' + '='.repeat(60));
+    console.log('SUMMARY');
+    console.log('='.repeat(60));
+    const finalAdminUsers = createdUsers.filter(u => u.role === 'ADMIN');
+    const finalRegularUsers = createdUsers.filter(u => u.role === 'USER');
+    const finalSuperAdmin = finalAdminUsers.find(u => u.mobileNumber === '9876543210');
+    const finalSubadmins = finalAdminUsers.filter(u => u.mobileNumber !== '9876543210');
+    
+    console.log(`- Users: ${createdUsers.length} (1 Super Admin, ${finalSubadmins.length} Sub Admins, ${finalRegularUsers.length} Regular Users)`);
+    console.log(`\n📋 ALL MOBILE NUMBERS WITH ROLES (OTP: 123456 for all):`);
     console.log(`- Jobs: ${createdJobs.length}`);
     console.log(`- Schemes: ${createdSchemes.length}`);
     console.log(`- User Preferences: ${userPreferences.length}`);
-    console.log('\nAdmin Login Credentials:');
-    console.log(`Mobile: 9876543210`);
-    console.log(`Role: ADMIN`);
+    console.log(`- OTP Entries: ${createdOTPs.length} (All use OTP: 123456 - NOT sent via Fast2SMS)`);
+    console.log(`- Device Entries: ${createdDevices.length}`);
+    console.log(`- Notifications: ${createdNotifications.length}`);
+    console.log(`- Audit Logs: ${createdAuditLogs.length}`);
+    
+    console.log('\n' + '='.repeat(60));
+    console.log('LOGIN CREDENTIALS (OTP: 123456 for all numbers - Hardcoded, NO Fast2SMS)');
+    console.log('='.repeat(60));
+    if (finalSuperAdmin) {
+      console.log('\n👑 SUPER ADMIN:');
+      console.log(`  ${finalSuperAdmin.mobileNumber} - ${finalSuperAdmin.adminProfile.name} (All States, All Permissions)`);
+    }
+    console.log('\n📱 SUB ADMINS:');
+    finalSubadmins.forEach(user => {
+      console.log(`  ${user.mobileNumber} - ${user.adminProfile.name} (${user.adminProfile.assignedStates.length > 0 ? user.adminProfile.assignedStates.join(', ') : 'No States'})`);
+    });
+    if (finalRegularUsers.length > 0) {
+      console.log('\n👤 REGULAR USERS:');
+      finalRegularUsers.forEach(user => {
+        console.log(`  ${user.mobileNumber} - ${user.profile.fullName} (${user.profile.state})`);
+      });
+    }
+    console.log('\n' + '='.repeat(60));
+    console.log('⚠️  IMPORTANT: OTP 123456 is HARDCODED - NO Fast2SMS SMS will be sent');
+    console.log('All users (admin, subadmin, regular) can login with OTP: 123456');
+    console.log('='.repeat(60));
 
   } catch (error) {
     console.error('❌ Error seeding database:', error);

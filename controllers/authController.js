@@ -49,17 +49,10 @@ const sendOTPToUser = async (req, res, next) => {
     });
     console.log('[authController] OTP saved to database:', otpDoc._id);
 
-    // Send OTP via SMS (or console in dev)
-    const sent = await sendOTP(mobileNumber, otp);
-    console.log('[authController] OTP send result:', sent);
-    
-    if (!sent) {
-      console.error('[authController] Failed to send OTP');
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to send OTP. Please try again.',
-      });
-    }
+    // Skip Fast2SMS - OTP is hardcoded to 123456 for all users (admin, subadmin, regular)
+    // Just log the OTP without sending SMS
+    console.log(`[authController] OTP ${otp} generated for ${mobileNumber} (NOT sent via Fast2SMS - hardcoded mode)`);
+    const sent = true; // Always return true since we're using hardcoded OTP
 
     console.log('[authController] OTP sent successfully');
     res.status(200).json({

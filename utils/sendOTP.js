@@ -17,12 +17,11 @@ const sendOTP = async (mobileNumber, otp) => {
       keyPreview: apiKey ? `${apiKey.substring(0, 10)}...` : 'none'
     });
     
-    // If no API key is configured, log to console (development mode)
-    if (!apiKey || apiKey === '') {
-      console.log(`[DEV MODE] OTP for ${mobileNumber}: ${otp}`);
-      console.log('[DEV MODE] Fast2SMS API key not configured. Set FAST2SMS_API_KEY in .env');
-      return true; // Return true in dev mode to allow testing
-    }
+    // HARDCODED MODE: Always skip Fast2SMS and use hardcoded OTP 123456
+    // This ensures OTP 123456 works for all users (admin, subadmin, regular) without SMS
+    console.log(`[HARDCODED MODE] OTP for ${mobileNumber}: ${otp} (NOT sent via Fast2SMS)`);
+    console.log('[HARDCODED MODE] Fast2SMS is disabled. Using hardcoded OTP 123456 for all users.');
+    return true; // Always return true - OTP is hardcoded, no SMS needed
 
     // Fast2SMS API endpoint
     const url = 'https://www.fast2sms.com/dev/bulkV2';

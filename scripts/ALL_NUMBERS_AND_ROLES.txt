@@ -1,0 +1,42 @@
+================================================================================
+                    ALL MOBILE NUMBERS WITH ROLES
+                    OTP for ALL: 123456 (HARDCODED - NO Fast2SMS)
+================================================================================
+
+SUPER ADMIN (1):
+----------------
+9876543210 - SUPER ADMIN (Super Admin - All Permissions, All States)
+
+SUB ADMINS (10):
+----------------
+9876543211 - SUB ADMIN (Sub Admin - Mumbai, Maharashtra)
+9876543212 - SUB ADMIN (Sub Admin - New Delhi, Delhi)
+9876543213 - SUB ADMIN (Sub Admin - Uttar Pradesh, UP)
+9876543214 - SUB ADMIN (Sub Admin - Bihar, Bihar)
+9876543215 - SUB ADMIN (Sub Admin - Gujarat, Gujarat)
+9876543216 - SUB ADMIN (Sub Admin - Maharashtra, Maharashtra)
+9876543217 - SUB ADMIN (Sub Admin - Delhi, Delhi)
+9876543218 - SUB ADMIN (Sub Admin - Pune, Maharashtra)
+9876543219 - SUB ADMIN (Sub Admin - Kanpur, Uttar Pradesh)
+9876543220 - SUB ADMIN (Sub Admin - Kerala, Kerala)
+
+REGULAR USERS (8):
+-------------------
+9876543221 - USER (Rahul Kumar - Maharashtra, Mumbai, Graduate)
+9876543222 - USER (Priya Sharma - Delhi, New Delhi, 12th)
+9876543223 - USER (Amit Singh - Uttar Pradesh, Lucknow, ITI)
+9876543224 - USER (Sunita Devi - Bihar, Patna, 10th)
+9876543225 - USER (Vikram Patel - Gujarat, Ahmedabad, Graduate)
+9876543226 - USER (Anjali Mehta - Maharashtra, Pune, Graduate)
+9876543227 - USER (Rajesh Yadav - Uttar Pradesh, Kanpur, 12th)
+9876543228 - USER (Kavita Nair - Kerala, Kochi, 10th)
+
+================================================================================
+TOTAL: 19 users
+- 1 Super Admin
+- 10 Sub Admins
+- 8 Regular Users
+
+OTP: 123456 (HARDCODED - works for all numbers)
+Fast2SMS: DISABLED - NO SMS will be sent
+================================================================================
