@@ -188,16 +188,9 @@ const verifyOTP = async (req, res, next) => {
 
     if (!user) {
       console.log('[authController] Creating new user');
-      // Register new user
-      if (otpDoc.purpose !== 'REGISTER' && !profile) {
-        console.log('[authController] Registration required but no profile provided');
-        return res.status(400).json({
-          success: false,
-          message: 'User not found. Please provide profile information for registration',
-        });
-      }
 
-      // Create new user
+      // For OTP login, automatically register user if they don't exist yet.
+      // If profile is provided (e.g. from ProfileSetup), use it; otherwise start with empty profile.
       const userData = {
         mobileNumber,
         role: 'USER',

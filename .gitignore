@@ -6,3 +6,7 @@ dist/
 build/
 .vscode/
 .idea/
+
+# Firebase service account (sensitive, do not commit)
+firebase-service-account.json
+*-firebase-adminsdk-*.json

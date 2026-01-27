@@ -8,12 +8,16 @@ const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 const { init: initSocket } = require('./lib/socket');
+const { initializeFirebase } = require('./utils/firebase');
 
 // Load env vars
 dotenv.config();
 
 // Connect to database
 connectDB();
+
+// Initialize Firebase Admin SDK
+initializeFirebase();
 
 const app = express();
 

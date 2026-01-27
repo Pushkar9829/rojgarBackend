@@ -124,25 +124,28 @@ const getUnreadCount = async (req, res, next) => {
 };
 
 /**
- * Register device for push (OneSignal subscription id).
+ * Register device for push (FCM token).
  * POST /api/notifications/register-device
- * Body: { playerId, platform }
+ * Body: { fcmToken, platform } or { playerId, platform } for backward compatibility
  */
 const registerDevice = async (req, res, next) => {
   try {
     console.log('[notificationController] registerDevice called');
     console.log('[notificationController] User ID:', req.user._id);
     console.log('[notificationController] Device data:', {
+      fcmToken: req.body.fcmToken,
       playerId: req.body.playerId,
       platform: req.body.platform,
     });
     
-    const { playerId, platform } = req.body;
-    if (!playerId || !platform) {
-      console.log('[notificationController] Missing playerId or platform');
+    const { fcmToken, playerId, platform } = req.body;
+    const token = fcmToken || playerId; // Support both for migration
+    
+    if (!token || !platform) {
+      console.log('[notificationController] Missing fcmToken/playerId or platform');
       return res.status(400).json({
         success: false,
-        message: 'playerId and platform are required',
+        message: 'fcmToken (or playerId) and platform are required',
       });
     }
     if (!['android', 'ios'].includes(platform)) {
@@ -153,17 +156,28 @@ const registerDevice = async (req, res, next) => {
       });
     }
 
+    // Use fcmToken as primary identifier, fallback to playerId for migration
+    const updateData = {
+      userId: req.user._id,
+      platform,
+      lastActiveAt: new Date(),
+    };
+    
+    if (fcmToken) {
+      updateData.fcmToken = fcmToken;
+    } else if (playerId) {
+      // Migration: store old playerId temporarily
+      updateData.playerId = playerId;
+      updateData.fcmToken = playerId; // Use as fcmToken until migrated
+    }
+
     const device = await Device.findOneAndUpdate(
-      { playerId },
-      {
-        userId: req.user._id,
-        platform,
-        lastActiveAt: new Date(),
-      },
+      fcmToken ? { fcmToken } : { playerId },
+      updateData,
       { upsert: true, new: true }
     );
 
-    console.log('[notificationController] Device registered:', { id: device._id, playerId, platform });
+    console.log('[notificationController] Device registered:', { id: device._id, fcmToken: device.fcmToken, platform });
     res.status(200).json({
       success: true,
       data: { device },
@@ -177,24 +191,30 @@ const registerDevice = async (req, res, next) => {
 /**
  * Unregister device.
  * POST /api/notifications/unregister-device
- * Body: { playerId }
+ * Body: { fcmToken } or { playerId } for backward compatibility
  */
 const unregisterDevice = async (req, res, next) => {
   try {
     console.log('[notificationController] unregisterDevice called');
     console.log('[notificationController] User ID:', req.user._id);
-    console.log('[notificationController] Player ID:', req.body.playerId);
+    console.log('[notificationController] Token:', req.body.fcmToken || req.body.playerId);
     
-    const { playerId } = req.body;
-    if (!playerId) {
-      console.log('[notificationController] Missing playerId');
+    const { fcmToken, playerId } = req.body;
+    const token = fcmToken || playerId;
+    
+    if (!token) {
+      console.log('[notificationController] Missing fcmToken/playerId');
       return res.status(400).json({
         success: false,
-        message: 'playerId is required',
+        message: 'fcmToken (or playerId) is required',
       });
     }
 
-    const result = await Device.deleteOne({ playerId, userId: req.user._id });
+    const query = fcmToken 
+      ? { fcmToken, userId: req.user._id }
+      : { $or: [{ fcmToken: playerId }, { playerId }], userId: req.user._id };
+    
+    const result = await Device.deleteOne(query);
     console.log('[notificationController] Device unregistered:', { deletedCount: result.deletedCount });
 
     res.status(200).json({

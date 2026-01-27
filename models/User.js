@@ -106,6 +106,27 @@ const userSchema = new mongoose.Schema(
         type: [String],
         default: [],
       },
+      // Subadmin verification fields
+      verificationStatus: {
+        type: String,
+        enum: ['PENDING', 'VERIFIED', 'REJECTED'],
+        default: 'PENDING',
+        index: true,
+      },
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      verifiedAt: {
+        type: Date,
+      },
+      rejectionReason: {
+        type: String,
+      },
+      onboardingRequestedAt: {
+        type: Date,
+        default: Date.now,
+      },
     },
   },
   {
@@ -135,6 +156,8 @@ userSchema.index({ mobileNumber: 1 }, { unique: true });
 userSchema.index({ role: 1 });
 userSchema.index({ 'profile.state': 1 });
 userSchema.index({ isActive: 1 });
+userSchema.index({ 'adminProfile.verificationStatus': 1 });
+userSchema.index({ 'adminProfile.verificationStatus': 1, createdAt: -1 });
 
 const User = mongoose.model('User', userSchema);
 

@@ -8,7 +8,16 @@ const deviceSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    // Support both playerId (OneSignal) and fcmToken (Firebase) for migration
     playerId: {
+      type: String,
+      required: false,
+      unique: false,
+      trim: true,
+      index: true,
+      sparse: true,
+    },
+    fcmToken: {
       type: String,
       required: true,
       unique: true,
@@ -29,7 +38,7 @@ const deviceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-deviceSchema.index({ userId: 1, playerId: 1 });
+deviceSchema.index({ userId: 1, fcmToken: 1 });
 
 const Device = mongoose.model('Device', deviceSchema);
 
