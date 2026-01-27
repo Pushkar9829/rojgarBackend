@@ -682,13 +682,19 @@ const seedDatabase = async () => {
     console.log(`✓ Created ${createdOTPs.length} OTP entries (all use OTP: 123456)\n`);
 
     // Seed Device entries for users (mock FCM tokens - unique for each user)
+    // Note: playerId is omitted to avoid duplicate key errors with null values
     console.log('Seeding device entries...');
-    const deviceEntries = createdUsers.map((user, index) => ({
-      userId: user._id,
-      fcmToken: `mock_fcm_token_${user.mobileNumber}_${Date.now()}_${index}_${Math.random().toString(36).substring(7)}`,
-      platform: 'android',
-      lastActiveAt: new Date(),
-    }));
+    const deviceEntries = createdUsers.map((user, index) => {
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(7);
+      return {
+        userId: user._id,
+        fcmToken: `mock_fcm_token_${user.mobileNumber}_${timestamp}_${index}_${random}`,
+        platform: 'android',
+        lastActiveAt: new Date(),
+        // playerId is intentionally omitted - it's optional and causes duplicate key errors when null
+      };
+    });
     const createdDevices = await Device.insertMany(deviceEntries);
     console.log(`✓ Created ${createdDevices.length} device entries\n`);
 
