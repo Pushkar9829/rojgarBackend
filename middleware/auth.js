@@ -68,10 +68,10 @@ const authorize = (...roles) => {
  */
 const checkPermission = (...permissions) => {
   return (req, res, next) => {
-    if (req.user.role !== 'ADMIN') {
+    if (req.user.role !== 'ADMIN' && req.user.role !== 'SUBADMIN') {
       return res.status(403).json({
         success: false,
-        message: 'Admin access required',
+        message: 'Admin or Subadmin access required',
       });
     }
 

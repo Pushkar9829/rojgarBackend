@@ -24,9 +24,9 @@ const {
 } = require('../controllers/subadminController');
 const { protect, authorize, checkPermission } = require('../middleware/auth');
 
-// All admin routes require authentication and admin role
+// All admin routes require authentication and admin/subadmin role
 router.use(protect);
-router.use(authorize('ADMIN'));
+router.use(authorize('ADMIN', 'SUBADMIN'));
 
 // Jobs CRUD
 router.post('/jobs', checkPermission('CREATE_JOBS'), createJob);

@@ -48,14 +48,14 @@ const createSubadmin = async (req, res, next) => {
     let user = await User.findOne({ mobileNumber });
     
     if (user) {
-      if (user.role === 'ADMIN') {
+      if (user.role === 'ADMIN' || user.role === 'SUBADMIN') {
         return res.status(400).json({
           success: false,
-          message: 'User is already an admin',
+          message: 'User is already an admin or subadmin',
         });
       }
-      // Convert existing user to admin
-      user.role = 'ADMIN';
+      // Convert existing user to subadmin
+      user.role = 'SUBADMIN';
       user.adminProfile = {
         name: name.trim(),
         email: email?.toLowerCase().trim() || undefined,
@@ -66,10 +66,10 @@ const createSubadmin = async (req, res, next) => {
       };
       await user.save();
     } else {
-      // Create new admin user
+      // Create new subadmin user
       user = await User.create({
         mobileNumber,
-        role: 'ADMIN',
+        role: 'SUBADMIN',
         isActive: false, // Inactive until verified
         adminProfile: {
           name: name.trim(),
@@ -152,7 +152,7 @@ const verifySubadmin = async (req, res, next) => {
       });
     }
 
-    if (subadmin.role !== 'ADMIN') {
+    if (subadmin.role !== 'SUBADMIN') {
       return res.status(400).json({
         success: false,
         message: 'User is not an admin',
@@ -225,7 +225,7 @@ const rejectSubadmin = async (req, res, next) => {
       });
     }
 
-    if (subadmin.role !== 'ADMIN') {
+    if (subadmin.role !== 'SUBADMIN') {
       return res.status(400).json({
         success: false,
         message: 'User is not an admin',
@@ -289,8 +289,8 @@ const getSubadmins = async (req, res, next) => {
       search,
     } = req.query;
 
-    // Build filter object
-    const filter = { role: 'ADMIN' };
+    // Build filter object - only get SUBADMIN role users
+    const filter = { role: 'SUBADMIN' };
 
     if (verificationStatus) {
       filter['adminProfile.verificationStatus'] = verificationStatus;
@@ -347,7 +347,7 @@ const getSubadminById = async (req, res, next) => {
       .select('-__v -profile')
       .populate('adminProfile.verifiedBy', 'adminProfile.name mobileNumber');
 
-    if (!subadmin || subadmin.role !== 'ADMIN') {
+    if (!subadmin || subadmin.role !== 'SUBADMIN') {
       return res.status(404).json({
         success: false,
         message: 'Subadmin not found',
@@ -376,7 +376,7 @@ const updateSubadmin = async (req, res, next) => {
 
     const subadmin = await User.findById(id);
 
-    if (!subadmin || subadmin.role !== 'ADMIN') {
+    if (!subadmin || subadmin.role !== 'SUBADMIN') {
       return res.status(404).json({
         success: false,
         message: 'Subadmin not found',
@@ -454,7 +454,7 @@ const updateSubadminPermissions = async (req, res, next) => {
 
     const subadmin = await User.findById(id);
 
-    if (!subadmin || subadmin.role !== 'ADMIN') {
+    if (!subadmin || subadmin.role !== 'SUBADMIN') {
       return res.status(404).json({
         success: false,
         message: 'Subadmin not found',
@@ -501,7 +501,7 @@ const deactivateSubadmin = async (req, res, next) => {
 
     const subadmin = await User.findById(id);
 
-    if (!subadmin || subadmin.role !== 'ADMIN') {
+    if (!subadmin || subadmin.role !== 'SUBADMIN') {
       return res.status(404).json({
         success: false,
         message: 'Subadmin not found',
@@ -554,7 +554,7 @@ const activateSubadmin = async (req, res, next) => {
 
     const subadmin = await User.findById(id);
 
-    if (!subadmin || subadmin.role !== 'ADMIN') {
+    if (!subadmin || subadmin.role !== 'SUBADMIN') {
       return res.status(404).json({
         success: false,
         message: 'Subadmin not found',

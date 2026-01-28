@@ -286,7 +286,19 @@ const getUsers = async (req, res, next) => {
     if (state) filter['profile.state'] = state;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
 
+    // For SUBADMIN, filter by assigned states (only for USER role)
+    if (req.user.role === 'SUBADMIN' && req.user.adminProfile?.assignedStates?.length > 0) {
+      const assignedStates = req.user.adminProfile.assignedStates;
+      // Only apply state filter for USER role, not for ADMIN/SUBADMIN roles
+      if (!role || role === 'USER') {
+        filter['profile.state'] = assignedStates.includes(state) 
+          ? state 
+          : { $in: assignedStates };
+      }
+    }
+
     console.log('[adminController] Filter:', filter);
+    console.log('[adminController] User Role:', req.user.role);
 
     // Pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -323,39 +335,106 @@ const getUsers = async (req, res, next) => {
 const getStats = async (req, res, next) => {
   try {
     console.log('[adminController] getStats called');
-    console.log('[adminController] Admin ID:', req.user._id);
+    console.log('[adminController] User ID:', req.user._id);
+    console.log('[adminController] User Role:', req.user.role);
 
-    const totalUsers = await User.countDocuments({ role: 'USER' });
-    const activeUsers = await User.countDocuments({ role: 'USER', isActive: true });
-    const totalAdmins = await User.countDocuments({ role: 'ADMIN' });
+    // Build filters based on user role
+    const userFilter = { role: 'USER' };
+    const jobFilter = {};
+    const schemeFilter = {};
+    const adminFilter = { role: 'ADMIN' };
 
-    const totalJobs = await Job.countDocuments();
-    const activeJobs = await Job.countDocuments({ isActive: true });
-    const featuredJobs = await Job.countDocuments({ isFeatured: true });
+    // For SUBADMIN, filter by assigned states
+    if (req.user.role === 'SUBADMIN' && req.user.adminProfile?.assignedStates?.length > 0) {
+      const assignedStates = req.user.adminProfile.assignedStates;
+      // Filter users by assigned states
+      userFilter['profile.state'] = { $in: assignedStates };
+      // Filter jobs: include CENTRAL jobs and STATE jobs in assigned states
+      jobFilter.$or = [
+        { jobType: 'CENTRAL' },
+        { jobType: 'STATE', state: { $in: assignedStates } }
+      ];
+      // Filter schemes: include CENTRAL schemes and STATE schemes in assigned states
+      schemeFilter.$or = [
+        { type: 'CENTRAL' },
+        { type: 'STATE', state: { $in: assignedStates } }
+      ];
+    }
 
-    const totalSchemes = await Scheme.countDocuments();
-    const activeSchemes = await Scheme.countDocuments({ isActive: true });
-    const featuredSchemes = await Scheme.countDocuments({ isFeatured: true });
+    const totalUsers = await User.countDocuments(userFilter);
+    const activeUsers = await User.countDocuments({ ...userFilter, isActive: true });
+    
+    // For ADMIN, return both admins and subadmins separately
+    let totalAdmins, totalSubadmins;
+    if (req.user.role === 'ADMIN') {
+      totalAdmins = await User.countDocuments({ role: 'ADMIN' });
+      totalSubadmins = await User.countDocuments({ role: 'SUBADMIN' });
+    } else {
+      // For SUBADMIN, only return subadmin count
+      totalAdmins = 0;
+      totalSubadmins = await User.countDocuments({ role: 'SUBADMIN' });
+    }
+
+    const totalJobs = Object.keys(jobFilter).length > 0 
+      ? await Job.countDocuments(jobFilter)
+      : await Job.countDocuments();
+    const activeJobs = Object.keys(jobFilter).length > 0
+      ? await Job.countDocuments({ ...jobFilter, isActive: true })
+      : await Job.countDocuments({ isActive: true });
+    const featuredJobs = Object.keys(jobFilter).length > 0
+      ? await Job.countDocuments({ ...jobFilter, isFeatured: true })
+      : await Job.countDocuments({ isFeatured: true });
+
+    const totalSchemes = Object.keys(schemeFilter).length > 0
+      ? await Scheme.countDocuments(schemeFilter)
+      : await Scheme.countDocuments();
+    const activeSchemes = Object.keys(schemeFilter).length > 0
+      ? await Scheme.countDocuments({ ...schemeFilter, isActive: true })
+      : await Scheme.countDocuments({ isActive: true });
+    const featuredSchemes = Object.keys(schemeFilter).length > 0
+      ? await Scheme.countDocuments({ ...schemeFilter, isFeatured: true })
+      : await Scheme.countDocuments({ isFeatured: true });
 
     // Jobs by type
-    const centralJobs = await Job.countDocuments({ jobType: 'CENTRAL' });
-    const stateJobs = await Job.countDocuments({ jobType: 'STATE' });
+    const centralJobFilter = Object.keys(jobFilter).length > 0
+      ? { ...jobFilter, jobType: 'CENTRAL' }
+      : { jobType: 'CENTRAL' };
+    const stateJobFilter = Object.keys(jobFilter).length > 0
+      ? { ...jobFilter, jobType: 'STATE' }
+      : { jobType: 'STATE' };
+    const centralJobs = await Job.countDocuments(centralJobFilter);
+    const stateJobs = await Job.countDocuments(stateJobFilter);
 
     // Schemes by type
-    const centralSchemes = await Scheme.countDocuments({ type: 'CENTRAL' });
-    const stateSchemes = await Scheme.countDocuments({ type: 'STATE' });
+    const centralSchemeFilter = Object.keys(schemeFilter).length > 0
+      ? { ...schemeFilter, type: 'CENTRAL' }
+      : { type: 'CENTRAL' };
+    const stateSchemeFilter = Object.keys(schemeFilter).length > 0
+      ? { ...schemeFilter, type: 'STATE' }
+      : { type: 'STATE' };
+    const centralSchemes = await Scheme.countDocuments(centralSchemeFilter);
+    const stateSchemes = await Scheme.countDocuments(stateSchemeFilter);
 
     // Recent activity (last 7 days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const recentJobs = await Job.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
-    const recentSchemes = await Scheme.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
-    const recentUsers = await User.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
+    const recentJobFilter = Object.keys(jobFilter).length > 0
+      ? { ...jobFilter, createdAt: { $gte: sevenDaysAgo } }
+      : { createdAt: { $gte: sevenDaysAgo } };
+    const recentSchemeFilter = Object.keys(schemeFilter).length > 0
+      ? { ...schemeFilter, createdAt: { $gte: sevenDaysAgo } }
+      : { createdAt: { $gte: sevenDaysAgo } };
+    const recentUserFilter = { ...userFilter, createdAt: { $gte: sevenDaysAgo } };
+    
+    const recentJobs = await Job.countDocuments(recentJobFilter);
+    const recentSchemes = await Scheme.countDocuments(recentSchemeFilter);
+    const recentUsers = await User.countDocuments(recentUserFilter);
 
     const stats = {
       users: {
         total: totalUsers,
         active: activeUsers,
         admins: totalAdmins,
+        subadmins: totalSubadmins,
       },
       jobs: {
         total: totalJobs,

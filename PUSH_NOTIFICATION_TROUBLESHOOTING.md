@@ -124,7 +124,7 @@ Verify:
 db.devices.find().pretty()
 
 # Via API (if endpoint exists)
-curl http://localhost:5000/api/notifications/devices
+curl https://api.tatsatinfotech.com/api/notifications/devices
 ```
 
 ### Test Push Notification Manually

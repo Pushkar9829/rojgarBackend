@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['USER', 'ADMIN'],
+      enum: ['USER', 'ADMIN', 'SUBADMIN'],
       default: 'USER',
       index: true,
     },
@@ -79,7 +79,7 @@ const userSchema = new mongoose.Schema(
       name: {
         type: String,
         required: function() {
-          return this.role === 'ADMIN';
+          return this.role === 'ADMIN' || this.role === 'SUBADMIN';
         },
       },
       email: {

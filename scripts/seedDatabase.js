@@ -44,7 +44,7 @@ const sampleUsers = [
   },
   {
     mobileNumber: '9876543211',
-    role: 'ADMIN',
+    role: 'SUBADMIN',
     adminProfile: {
       name: 'Sub Admin - Mumbai',
       email: 'subadmin.mumbai@rojgaalert.com',
@@ -61,7 +61,7 @@ const sampleUsers = [
   },
   {
     mobileNumber: '9876543212',
-    role: 'ADMIN',
+    role: 'SUBADMIN',
     adminProfile: {
       name: 'Sub Admin - New Delhi',
       email: 'subadmin.newdelhi@rojgaalert.com',
@@ -77,7 +77,7 @@ const sampleUsers = [
   },
   {
     mobileNumber: '9876543213',
-    role: 'ADMIN',
+    role: 'SUBADMIN',
     adminProfile: {
       name: 'Sub Admin - Uttar Pradesh',
       email: 'subadmin.up@rojgaalert.com',
@@ -94,7 +94,7 @@ const sampleUsers = [
   },
   {
     mobileNumber: '9876543214',
-    role: 'ADMIN',
+    role: 'SUBADMIN',
     adminProfile: {
       name: 'Sub Admin - Bihar',
       email: 'subadmin.bihar@rojgaalert.com',
@@ -110,7 +110,7 @@ const sampleUsers = [
   },
   {
     mobileNumber: '9876543215',
-    role: 'ADMIN',
+    role: 'SUBADMIN',
     adminProfile: {
       name: 'Sub Admin - Gujarat',
       email: 'subadmin.gujarat@rojgaalert.com',
@@ -127,7 +127,7 @@ const sampleUsers = [
   },
   {
     mobileNumber: '9876543216',
-    role: 'ADMIN',
+    role: 'SUBADMIN',
     adminProfile: {
       name: 'Sub Admin - Maharashtra',
       email: 'subadmin.mh@rojgaalert.com',
@@ -144,7 +144,7 @@ const sampleUsers = [
   },
   {
     mobileNumber: '9876543217',
-    role: 'ADMIN',
+    role: 'SUBADMIN',
     adminProfile: {
       name: 'Sub Admin - Delhi',
       email: 'subadmin.del@rojgaalert.com',
@@ -160,7 +160,7 @@ const sampleUsers = [
   },
   {
     mobileNumber: '9876543218',
-    role: 'ADMIN',
+    role: 'SUBADMIN',
     adminProfile: {
       name: 'Sub Admin - Pune',
       email: 'subadmin.pune@rojgaalert.com',
@@ -176,7 +176,7 @@ const sampleUsers = [
   },
   {
     mobileNumber: '9876543219',
-    role: 'ADMIN',
+    role: 'SUBADMIN',
     adminProfile: {
       name: 'Sub Admin - Kanpur',
       email: 'subadmin.kanpur@rojgaalert.com',
@@ -191,7 +191,7 @@ const sampleUsers = [
   },
   {
     mobileNumber: '9876543220',
-    role: 'ADMIN',
+    role: 'SUBADMIN',
     adminProfile: {
       name: 'Sub Admin - Kerala',
       email: 'subadmin.kerala@rojgaalert.com',
@@ -760,8 +760,8 @@ const seedDatabase = async () => {
     // Seed Audit Logs for admin actions
     console.log('Seeding audit logs...');
     const allAdminUsers = createdUsers.filter(u => u.role === 'ADMIN');
+    const allSubadminUsers = createdUsers.filter(u => u.role === 'SUBADMIN');
     const superAdminForAudit = allAdminUsers.find(u => u.mobileNumber === '9876543210');
-    const allSubadminUsers = allAdminUsers.filter(u => u.mobileNumber !== '9876543210');
     const auditLogEntries = [];
     
     // Create audit logs for subadmin verification
@@ -799,11 +799,11 @@ const seedDatabase = async () => {
     console.log('SUMMARY');
     console.log('='.repeat(60));
     const finalAdminUsers = createdUsers.filter(u => u.role === 'ADMIN');
+    const finalSubadminUsers = createdUsers.filter(u => u.role === 'SUBADMIN');
     const finalRegularUsers = createdUsers.filter(u => u.role === 'USER');
     const finalSuperAdmin = finalAdminUsers.find(u => u.mobileNumber === '9876543210');
-    const finalSubadmins = finalAdminUsers.filter(u => u.mobileNumber !== '9876543210');
     
-    console.log(`- Users: ${createdUsers.length} (1 Super Admin, ${finalSubadmins.length} Sub Admins, ${finalRegularUsers.length} Regular Users)`);
+    console.log(`- Users: ${createdUsers.length} (1 Super Admin, ${finalSubadminUsers.length} Sub Admins, ${finalRegularUsers.length} Regular Users)`);
     console.log(`\n📋 ALL MOBILE NUMBERS WITH ROLES (OTP: 123456 for all):`);
     console.log(`- Jobs: ${createdJobs.length}`);
     console.log(`- Schemes: ${createdSchemes.length}`);
@@ -821,7 +821,7 @@ const seedDatabase = async () => {
       console.log(`  ${finalSuperAdmin.mobileNumber} - ${finalSuperAdmin.adminProfile.name} (All States, All Permissions)`);
     }
     console.log('\n📱 SUB ADMINS:');
-    finalSubadmins.forEach(user => {
+    finalSubadminUsers.forEach(user => {
       console.log(`  ${user.mobileNumber} - ${user.adminProfile.name} (${user.adminProfile.assignedStates.length > 0 ? user.adminProfile.assignedStates.join(', ') : 'No States'})`);
     });
     if (finalRegularUsers.length > 0) {
