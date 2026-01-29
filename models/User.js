@@ -22,18 +22,13 @@ const userSchema = new mongoose.Schema(
       index: true,
     },
     lastLoginAt: Date,
+    // Profile optional on first register; jobs/schemes APIs require complete profile
     profile: {
       fullName: {
         type: String,
-        required: function() {
-          return this.role === 'USER';
-        },
       },
       dateOfBirth: {
         type: Date,
-        required: function() {
-          return this.role === 'USER';
-        },
       },
       age: {
         type: Number,
@@ -43,22 +38,13 @@ const userSchema = new mongoose.Schema(
       education: {
         type: String,
         enum: ['10th', '12th', 'ITI', 'Graduate'],
-        required: function() {
-          return this.role === 'USER';
-        },
       },
       state: {
         type: String,
-        required: function() {
-          return this.role === 'USER';
-        },
         index: true,
       },
       district: {
         type: String,
-        required: function() {
-          return this.role === 'USER';
-        },
       },
       preferredDomains: {
         type: [String],

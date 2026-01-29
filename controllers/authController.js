@@ -7,7 +7,7 @@ const { generateToken } = require('../utils/jwtToken');
 const { isSeededNumber } = require('../config/seededNumbers');
 
 /**
- * Send OTP to mobile number
+ * Send OTP to mobile number (single endpoint for login/signup)
  */
 const sendOTPToUser = async (req, res, next) => {
   try {
@@ -25,7 +25,7 @@ const sendOTPToUser = async (req, res, next) => {
       });
     }
 
-    console.log('[authController] Sending OTP to:', mobileNumber, 'Purpose:', purpose);
+    console.log('[authController] Sending OTP to:', mobileNumber);
 
     // Invalidate previous unused OTPs for this mobile number
     const invalidated = await OTP.updateMany(
@@ -231,11 +231,19 @@ const verifyOTP = async (req, res, next) => {
     const token = generateToken(user._id, user.role);
     console.log('[authController] Token generated');
 
+    const profileComplete = !!(
+      user.profile?.fullName &&
+      user.profile?.education != null &&
+      user.profile?.state &&
+      user.profile?.district
+    );
+
     const response = {
       success: true,
-      message: otpDoc.purpose === 'REGISTER' ? 'Registration successful' : 'Login successful',
+      message: 'Authentication successful',
       data: {
         token,
+        profileComplete,
         user: {
           _id: user._id,
           mobileNumber: user.mobileNumber,
@@ -246,9 +254,8 @@ const verifyOTP = async (req, res, next) => {
     };
 
     console.log('[authController] verifyOTP success:', {
-      purpose: otpDoc.purpose,
       userId: user._id,
-      hasProfile: !!user.profile?.fullName,
+      profileComplete,
     });
 
     res.status(200).json(response);
