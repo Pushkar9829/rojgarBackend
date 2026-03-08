@@ -13,6 +13,10 @@ const auditLogSchema = new mongoose.Schema(
         'SUBADMIN_DEACTIVATED',
         'SUBADMIN_ACTIVATED',
         'SUBADMIN_PERMISSIONS_UPDATED',
+        'SUPER_SUBADMIN_CREATED',
+        'SUPER_SUBADMIN_UPDATED',
+        'SUPER_SUBADMIN_DEACTIVATED',
+        'SUPER_SUBADMIN_ACTIVATED',
       ],
       index: true,
     },
@@ -70,6 +74,10 @@ auditLogSchema.virtual('actionDescription').get(function() {
     SUBADMIN_DEACTIVATED: 'Subadmin deactivated',
     SUBADMIN_ACTIVATED: 'Subadmin activated',
     SUBADMIN_PERMISSIONS_UPDATED: 'Subadmin permissions updated',
+    SUPER_SUBADMIN_CREATED: 'Super Sub-Admin created',
+    SUPER_SUBADMIN_UPDATED: 'Super Sub-Admin updated',
+    SUPER_SUBADMIN_DEACTIVATED: 'Super Sub-Admin deactivated',
+    SUPER_SUBADMIN_ACTIVATED: 'Super Sub-Admin activated',
   };
   return descriptions[this.action] || this.action;
 });

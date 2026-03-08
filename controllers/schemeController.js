@@ -103,8 +103,8 @@ const getSchemeById = async (req, res, next) => {
 
     console.log('[schemeController] Scheme found:', {
       id: scheme._id,
-      title: scheme.title,
-      category: scheme.category,
+      name: scheme.name,
+      type: scheme.type,
     });
 
     res.status(200).json({

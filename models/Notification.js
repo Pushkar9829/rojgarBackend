@@ -10,7 +10,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['JOB_ALERT', 'SCHEME_ALERT', 'JOB_REMINDER', 'SCHEME_REMINDER', 'ADMIN_ANNOUNCEMENT'],
+      enum: ['JOB_ALERT', 'JOB_UPDATED', 'SCHEME_ALERT', 'SCHEME_REMINDER', 'JOB_REMINDER', 'ADMIN_ANNOUNCEMENT'],
       required: true,
       index: true,
     },

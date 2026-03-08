@@ -99,6 +99,7 @@ app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/schemes', require('./routes/schemes'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/master', require('./routes/masterData'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

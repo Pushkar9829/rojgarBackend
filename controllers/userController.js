@@ -9,7 +9,12 @@ const getProfile = async (req, res, next) => {
     console.log('[userController] getProfile called');
     console.log('[userController] User ID:', req.user._id);
 
-    const user = await User.findById(req.user._id).select('-__v');
+    const user = await User.findById(req.user._id)
+      .select('-__v')
+      .populate('profile.educationEntries.qualificationId', 'name')
+      .populate('profile.educationEntries.streamId', 'name')
+      .populate('profile.skillsCertificates', 'name')
+      .populate('profile.jobTypeIds', 'name requiresHeight');
 
     if (!user) {
       console.log('[userController] User not found');
@@ -23,7 +28,10 @@ const getProfile = async (req, res, next) => {
       userId: user._id,
       mobileNumber: user.mobileNumber,
       hasProfile: !!user.profile,
-      profileComplete: !!(user.profile?.fullName && user.profile?.education),
+      profileComplete: !!(
+        user.profile?.fullName &&
+        (user.profile?.education || (user.profile?.educationEntries && user.profile.educationEntries.length > 0))
+      ),
     });
 
     res.status(200).json({
@@ -79,12 +87,20 @@ const updateProfile = async (req, res, next) => {
     });
 
     // Update profile fields
-    if (profile.fullName) user.profile.fullName = profile.fullName;
-    if (profile.dateOfBirth) user.profile.dateOfBirth = profile.dateOfBirth;
-    if (profile.education) user.profile.education = profile.education;
-    if (profile.state) user.profile.state = profile.state;
-    if (profile.district) user.profile.district = profile.district;
-    if (profile.preferredDomains) user.profile.preferredDomains = profile.preferredDomains;
+    if (profile.fullName !== undefined) user.profile.fullName = profile.fullName;
+    if (profile.dateOfBirth !== undefined) user.profile.dateOfBirth = profile.dateOfBirth;
+    if (profile.education !== undefined) user.profile.education = profile.education;
+    if (profile.category !== undefined) user.profile.category = profile.category;
+    if (profile.gender !== undefined) user.profile.gender = profile.gender;
+    if (profile.domicileState !== undefined) user.profile.domicileState = profile.domicileState;
+    if (profile.educationEntries !== undefined) user.profile.educationEntries = profile.educationEntries;
+    if (profile.skillsCertificates !== undefined) user.profile.skillsCertificates = profile.skillsCertificates;
+    if (profile.jobPreference !== undefined) user.profile.jobPreference = profile.jobPreference;
+    if (profile.jobTypeIds !== undefined) user.profile.jobTypeIds = profile.jobTypeIds;
+    if (profile.height !== undefined) user.profile.height = profile.height;
+    if (profile.state !== undefined) user.profile.state = profile.state;
+    if (profile.district !== undefined) user.profile.district = profile.district;
+    if (profile.preferredDomains !== undefined) user.profile.preferredDomains = profile.preferredDomains;
 
     await user.save();
     console.log('[userController] Profile updated successfully');

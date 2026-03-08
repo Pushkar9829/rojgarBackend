@@ -62,17 +62,25 @@ const authorize = (...roles) => {
   };
 };
 
+/** Super Admin: top-level; treat ADMIN as Super Admin for backward compatibility */
+const isSuperAdmin = (user) => user.role === 'SUPER_ADMIN' || user.role === 'ADMIN';
+
 /**
  * Check admin permissions
  * @param {...string} permissions - Permissions required
  */
 const checkPermission = (...permissions) => {
   return (req, res, next) => {
-    if (req.user.role !== 'ADMIN' && req.user.role !== 'SUBADMIN') {
+    const adminRoles = ['ADMIN', 'SUBADMIN', 'SUPER_ADMIN', 'SUPER_SUBADMIN'];
+    if (!adminRoles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         message: 'Admin or Subadmin access required',
       });
+    }
+
+    if (isSuperAdmin(req.user) || req.user.role === 'SUPER_SUBADMIN') {
+      return next();
     }
 
     if (req.user.adminProfile && req.user.adminProfile.permissions.length > 0) {
@@ -92,8 +100,27 @@ const checkPermission = (...permissions) => {
   };
 };
 
+/**
+ * Optional auth: set req.user if valid token present, otherwise continue without user.
+ */
+const optionalAuth = async (req, res, next) => {
+  let token;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+  if (!token) return next();
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('-__v');
+    if (user && user.isActive) req.user = user;
+  } catch (e) {}
+  next();
+};
+
 module.exports = {
   protect,
   authorize,
   checkPermission,
+  isSuperAdmin,
+  optionalAuth,
 };

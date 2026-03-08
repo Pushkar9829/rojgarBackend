@@ -5,6 +5,8 @@ const { getIO } = require('../lib/socket');
 const {
   createNotificationsForJob,
   createNotificationsForScheme,
+  createNotificationsForJobUpdate,
+  isSignificantJobChange,
 } = require('../lib/notificationService');
 
 /**
@@ -26,6 +28,17 @@ const createJob = async (req, res, next) => {
       createdBy: req.user._id,
       updatedBy: req.user._id,
     };
+    if (req.user.role === 'SUBADMIN' && jobData.status !== 'DRAFT') {
+      jobData.status = 'PENDING_APPROVAL';
+    }
+    if (jobData.dates?.length && !jobData.lastDate) {
+      const dateValues = jobData.dates.map((d) => (d.date ? new Date(d.date) : null)).filter(Boolean);
+      if (dateValues.length) jobData.lastDate = new Date(Math.max(...dateValues.map((d) => d.getTime())));
+    }
+    if (jobData.ageLimit && (jobData.ageLimit.min != null || jobData.ageLimit.max != null) && jobData.ageMin == null) {
+      jobData.ageMin = jobData.ageLimit.min ?? jobData.ageMin;
+      jobData.ageMax = jobData.ageLimit.max ?? jobData.ageMax;
+    }
 
     const job = await Job.create(jobData);
     console.log('[adminController] Job created:', { id: job._id, title: job.title });
@@ -65,38 +78,56 @@ const updateJob = async (req, res, next) => {
     console.log('[adminController] Admin ID:', req.user._id);
     console.log('[adminController] Update data:', Object.keys(req.body));
 
-    let job = await Job.findById(req.params.id);
-
-    if (!job) {
-      console.log('[adminController] Job not found:', req.params.id);
+    const previousJob = await Job.findById(req.params.id).lean();
+    if (!previousJob) {
       return res.status(404).json({
         success: false,
         message: 'Job not found',
       });
     }
+    let job = await Job.findById(req.params.id);
     console.log('[adminController] Job found:', { id: job._id, title: job.title });
 
+    // Sub-admin cannot set status to APPROVED
+    const body = { ...req.body };
+    if (req.user.role === 'SUBADMIN' && body.status === 'APPROVED') {
+      body.status = 'PENDING_APPROVAL';
+    }
+
     // Update job fields
-    Object.keys(req.body).forEach((key) => {
+    Object.keys(body).forEach((key) => {
       if (key !== 'createdBy' && key !== 'createdAt') {
-        job[key] = req.body[key];
+        job[key] = body[key];
       }
     });
+    if (job.dates?.length && !job.lastDate) {
+      const dateValues = job.dates.map((d) => (d.date ? new Date(d.date) : null)).filter(Boolean);
+      if (dateValues.length) job.lastDate = new Date(Math.max(...dateValues.map((d) => d.getTime())));
+    }
+    if (job.ageLimit && (job.ageLimit.min != null || job.ageLimit.max != null) && (job.ageMin == null || job.ageMax == null)) {
+      if (job.ageMin == null && job.ageLimit.min != null) job.ageMin = job.ageLimit.min;
+      if (job.ageMax == null && job.ageLimit.max != null) job.ageMax = job.ageLimit.max;
+    }
 
     job.updatedBy = req.user._id;
     await job.save();
+    const savedJob = await Job.findById(job._id);
     console.log('[adminController] Job updated:', { id: job._id, title: job.title });
     try {
-      getIO().to('admin').emit('job:updated', { job: job.toObject ? job.toObject() : job });
-      console.log('[adminController] Emitted job:updated event');
+      getIO().to('admin').emit('job:updated', { job: savedJob.toObject ? savedJob.toObject() : savedJob });
     } catch (e) {
       console.error('[adminController] Socket emit error:', e);
     }
     try {
-      const notifCount = await createNotificationsForJob(job);
-      console.log('[adminController] Notifications created for updated job:', notifCount);
+      if (previousJob.status === 'APPROVED' && savedJob.status === 'APPROVED' && isSignificantJobChange(previousJob, savedJob)) {
+        const count = await createNotificationsForJobUpdate(savedJob);
+        console.log('[adminController] Job-update notifications sent:', count);
+      } else if (savedJob.status === 'APPROVED') {
+        const notifCount = await createNotificationsForJob(savedJob);
+        console.log('[adminController] Notifications created for job:', notifCount);
+      }
     } catch (e) {
-      console.error('[adminController] createNotificationsForJob error:', e);
+      console.error('[adminController] Notification error:', e);
     }
 
     console.log('[adminController] updateJob completed successfully');
@@ -104,11 +135,86 @@ const updateJob = async (req, res, next) => {
       success: true,
       message: 'Job updated successfully',
       data: {
-        job,
+        job: savedJob,
       },
     });
   } catch (error) {
     console.error('[adminController] updateJob error:', error);
+    next(error);
+  }
+};
+
+/**
+ * Approve a job (set status to APPROVED). Only ADMIN / SUPER_ADMIN / SUPER_SUBADMIN.
+ */
+const approveJob = async (req, res, next) => {
+  try {
+    console.log('[adminController] approveJob called', { jobId: req.params.id, userId: req.user._id, role: req.user.role });
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+    if (job.status !== 'PENDING_APPROVAL') {
+      console.log('[adminController] approveJob rejected - not PENDING_APPROVAL:', job.status);
+      return res.status(400).json({
+        success: false,
+        message: `Job is not pending approval (current: ${job.status})`,
+      });
+    }
+    job.status = 'APPROVED';
+    job.updatedBy = req.user._id;
+    await job.save();
+    try {
+      getIO().to('admin').emit('job:updated', { job: job.toObject ? job.toObject() : job });
+    } catch (e) {}
+    try {
+      const notifCount = await createNotificationsForJob(job);
+      console.log('[adminController] Notifications created for approved job:', notifCount);
+    } catch (e) {
+      console.error('[adminController] createNotificationsForJob error:', e);
+    }
+    console.log('[adminController] approveJob success', { jobId: job._id });
+    res.status(200).json({
+      success: true,
+      message: 'Job approved successfully',
+      data: { job },
+    });
+  } catch (error) {
+    console.error('[adminController] approveJob error:', error);
+    next(error);
+  }
+};
+
+/**
+ * Reject a job (set status to REJECTED). Only ADMIN / SUPER_ADMIN / SUPER_SUBADMIN.
+ */
+const rejectJob = async (req, res, next) => {
+  try {
+    console.log('[adminController] rejectJob called', { jobId: req.params.id, userId: req.user._id });
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+    if (job.status !== 'PENDING_APPROVAL') {
+      return res.status(400).json({
+        success: false,
+        message: `Job is not pending approval (current: ${job.status})`,
+      });
+    }
+    job.status = 'REJECTED';
+    job.updatedBy = req.user._id;
+    await job.save();
+    try {
+      getIO().to('admin').emit('job:updated', { job: job.toObject ? job.toObject() : job });
+    } catch (e) {}
+    console.log('[adminController] rejectJob success', { jobId: job._id });
+    res.status(200).json({
+      success: true,
+      message: 'Job rejected',
+      data: { job },
+    });
+  } catch (error) {
+    console.error('[adminController] rejectJob error:', error);
     next(error);
   }
 };
@@ -155,6 +261,7 @@ const deleteJob = async (req, res, next) => {
  */
 const createScheme = async (req, res, next) => {
   try {
+    console.log('[adminController] createScheme called', { userId: req.user._id, name: req.body?.name });
     const schemeData = {
       ...req.body,
       createdBy: req.user._id,
@@ -162,6 +269,7 @@ const createScheme = async (req, res, next) => {
     };
 
     const scheme = await Scheme.create(schemeData);
+    console.log('[adminController] createScheme success', { schemeId: scheme._id, name: scheme.name });
     try {
       getIO().to('admin').emit('scheme:created', { scheme: scheme.toObject ? scheme.toObject() : scheme });
     } catch (e) {
@@ -181,6 +289,7 @@ const createScheme = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error('[adminController] createScheme error:', error);
     next(error);
   }
 };
@@ -190,6 +299,7 @@ const createScheme = async (req, res, next) => {
  */
 const updateScheme = async (req, res, next) => {
   try {
+    console.log('[adminController] updateScheme called', { schemeId: req.params.id, userId: req.user._id });
     let scheme = await Scheme.findById(req.params.id);
 
     if (!scheme) {
@@ -219,6 +329,7 @@ const updateScheme = async (req, res, next) => {
       if (process.env.NODE_ENV === 'development') console.error('[admin] createNotificationsForScheme:', e);
     }
 
+    console.log('[adminController] updateScheme success', { schemeId: scheme._id });
     res.status(200).json({
       success: true,
       message: 'Scheme updated successfully',
@@ -227,6 +338,7 @@ const updateScheme = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error('[adminController] updateScheme error:', error);
     next(error);
   }
 };
@@ -236,6 +348,7 @@ const updateScheme = async (req, res, next) => {
  */
 const deleteScheme = async (req, res, next) => {
   try {
+    console.log('[adminController] deleteScheme called', { schemeId: req.params.id });
     const scheme = await Scheme.findById(req.params.id);
 
     if (!scheme) {
@@ -253,11 +366,13 @@ const deleteScheme = async (req, res, next) => {
       /* ignore */
     }
 
+    console.log('[adminController] deleteScheme success', { schemeId });
     res.status(200).json({
       success: true,
       message: 'Scheme deleted successfully',
     });
   } catch (error) {
+    console.error('[adminController] deleteScheme error:', error);
     next(error);
   }
 };
@@ -480,6 +595,8 @@ module.exports = {
   createJob,
   updateJob,
   deleteJob,
+  approveJob,
+  rejectJob,
   createScheme,
   updateScheme,
   deleteScheme,

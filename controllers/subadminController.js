@@ -27,6 +27,7 @@ const createAuditLog = async (action, performedBy, targetUser, details = {}, sta
  */
 const createSubadmin = async (req, res, next) => {
   try {
+    console.log('[subadminController] createSubadmin called', { performedBy: req.user._id, mobileNumber: req.body?.mobileNumber, name: req.body?.name });
     const { mobileNumber, name, email, permissions, assignedStates } = req.body;
 
     // Validate required fields
@@ -99,6 +100,7 @@ const createSubadmin = async (req, res, next) => {
       req
     );
 
+    console.log('[subadminController] createSubadmin success', { subadminId: user._id, mobileNumber: user.mobileNumber });
     res.status(201).json({
       success: true,
       message: 'Subadmin onboarding request created successfully',
@@ -140,6 +142,7 @@ const createSubadmin = async (req, res, next) => {
  */
 const verifySubadmin = async (req, res, next) => {
   try {
+    console.log('[subadminController] verifySubadmin called', { id: req.params.id, performedBy: req.user._id });
     const { id } = req.params;
     const { notes } = req.body;
 
@@ -188,6 +191,7 @@ const verifySubadmin = async (req, res, next) => {
       req
     );
 
+    console.log('[subadminController] verifySubadmin success', { subadminId: subadmin._id });
     res.status(200).json({
       success: true,
       message: 'Subadmin verified successfully',
@@ -206,6 +210,7 @@ const verifySubadmin = async (req, res, next) => {
  */
 const rejectSubadmin = async (req, res, next) => {
   try {
+    console.log('[subadminController] rejectSubadmin called', { id: req.params.id, performedBy: req.user._id });
     const { id } = req.params;
     const { reason } = req.body;
 
@@ -280,6 +285,7 @@ const rejectSubadmin = async (req, res, next) => {
  */
 const getSubadmins = async (req, res, next) => {
   try {
+    console.log('[subadminController] getSubadmins called', { query: req.query, userId: req.user._id });
     const {
       verificationStatus,
       isActive,
@@ -341,6 +347,7 @@ const getSubadmins = async (req, res, next) => {
  */
 const getSubadminById = async (req, res, next) => {
   try {
+    console.log('[subadminController] getSubadminById called', { id: req.params.id });
     const { id } = req.params;
 
     const subadmin = await User.findById(id)
@@ -497,6 +504,7 @@ const updateSubadminPermissions = async (req, res, next) => {
  */
 const deactivateSubadmin = async (req, res, next) => {
   try {
+    console.log('[subadminController] deactivateSubadmin called', { id: req.params.id, performedBy: req.user._id });
     const { id } = req.params;
 
     const subadmin = await User.findById(id);
@@ -550,6 +558,7 @@ const deactivateSubadmin = async (req, res, next) => {
  */
 const activateSubadmin = async (req, res, next) => {
   try {
+    console.log('[subadminController] activateSubadmin called', { id: req.params.id, performedBy: req.user._id });
     const { id } = req.params;
 
     const subadmin = await User.findById(id);
@@ -603,6 +612,7 @@ const activateSubadmin = async (req, res, next) => {
  */
 const getAuditLogs = async (req, res, next) => {
   try {
+    console.log('[subadminController] getAuditLogs called', { query: req.query, userId: req.user._id });
     const {
       action,
       targetUser,
@@ -627,6 +637,10 @@ const getAuditLogs = async (req, res, next) => {
       'SUBADMIN_DEACTIVATED',
       'SUBADMIN_ACTIVATED',
       'SUBADMIN_PERMISSIONS_UPDATED',
+      'SUPER_SUBADMIN_CREATED',
+      'SUPER_SUBADMIN_UPDATED',
+      'SUPER_SUBADMIN_DEACTIVATED',
+      'SUPER_SUBADMIN_ACTIVATED',
     ];
 
     if (action) {

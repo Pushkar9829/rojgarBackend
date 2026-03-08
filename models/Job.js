@@ -84,6 +84,57 @@ const jobSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    // --- Extended Job Card (Phase 3) ---
+    dates: [
+      {
+        label: { type: String, trim: true },
+        date: { type: Date },
+        time: { type: String, trim: true },
+      },
+    ],
+    eligibleStates: {
+      type: [String],
+      default: undefined,
+    },
+    ageLimit: {
+      min: { type: Number },
+      max: { type: Number },
+      maleMin: { type: Number },
+      maleMax: { type: Number },
+      femaleMin: { type: Number },
+      femaleMax: { type: Number },
+      sameForAll: { type: Boolean, default: true },
+      miscText: { type: String, trim: true },
+      asOnDateFrom: { type: Date },
+      asOnDateTo: { type: Date },
+    },
+    vacancySeats: [
+      {
+        postName: { type: String, trim: true },
+        totalSeats: { type: Number, min: 0 },
+        categoryWiseSeats: { type: mongoose.Schema.Types.Mixed },
+        stateWiseSeats: { type: mongoose.Schema.Types.Mixed },
+      },
+    ],
+    eligibilityRules: [
+      {
+        logic: { type: String, enum: ['AND', 'OR'], default: 'AND' },
+        conditions: [
+          {
+            qualificationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Qualification' },
+            streamId: { type: mongoose.Schema.Types.ObjectId, ref: 'Stream' },
+          },
+        ],
+      },
+    ],
+    misc: { type: String, trim: true },
+    sourceLink: { type: String, trim: true },
+    status: {
+      type: String,
+      enum: ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED'],
+      default: 'APPROVED',
+      index: true,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

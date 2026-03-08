@@ -231,12 +231,16 @@ const verifyOTP = async (req, res, next) => {
     const token = generateToken(user._id, user.role);
     console.log('[authController] Token generated');
 
-    const profileComplete = !!(
-      user.profile?.fullName &&
-      user.profile?.education != null &&
-      user.profile?.state &&
-      user.profile?.district
-    );
+    // Admin roles use adminProfile; treat as complete for panel. USER needs full app profile.
+    const isAdminRole = ['ADMIN', 'SUPER_ADMIN', 'SUBADMIN', 'SUPER_SUBADMIN'].includes(user.role);
+    const profileComplete = isAdminRole
+      ? !!(user.adminProfile?.name)
+      : !!(
+          user.profile?.fullName &&
+          (user.profile?.education != null || (user.profile?.educationEntries && user.profile.educationEntries.length > 0)) &&
+          user.profile?.state &&
+          user.profile?.district
+        );
 
     const response = {
       success: true,

@@ -1,12 +1,15 @@
 /**
- * List of mobile numbers that use hardcoded OTP 123456
- * These are the numbers from the seed database script
- * All other numbers will use Fast2SMS for OTP delivery
+ * List of mobile numbers that use hardcoded OTP 123456 (no Fast2SMS).
+ * Admin panel + RojgarApp seeded users. All other numbers use Fast2SMS.
  */
 const SEEDED_MOBILE_NUMBERS = [
-  // Super Admin
+  // Admin panel - Super Admin
   '9876543210',
-  // Sub Admins
+  // Admin panel - Admin
+  '9876543209',
+  // Admin panel - Super Sub-Admin
+  '9876543208',
+  // Admin panel - Subadmins
   '9876543211',
   '9876543212',
   '9876543213',
@@ -17,7 +20,7 @@ const SEEDED_MOBILE_NUMBERS = [
   '9876543218',
   '9876543219',
   '9876543220',
-  // Regular Users
+  // RojgarApp - Regular users
   '9876543221',
   '9876543222',
   '9876543223',

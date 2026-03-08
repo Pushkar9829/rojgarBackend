@@ -8,6 +8,10 @@ const Notification = require('../models/Notification');
 const AuditLog = require('../models/AuditLog');
 const Device = require('../models/Device');
 const OTP = require('../models/OTP');
+const Qualification = require('../models/Qualification');
+const Stream = require('../models/Stream');
+const SkillCertificate = require('../models/SkillCertificate');
+const JobType = require('../models/JobType');
 
 // Connect to MongoDB
 const connectDB = async () => {
@@ -20,193 +24,148 @@ const connectDB = async () => {
   }
 };
 
-// Sample data
-const sampleUsers = [
-  {
-    mobileNumber: '9876543210',
-    role: 'ADMIN',
-    adminProfile: {
-      name: 'Super Admin',
-      email: 'admin@rojgaalert.com',
-      permissions: [
-        'CREATE_JOBS',
-        'EDIT_JOBS',
-        'DELETE_JOBS',
-        'CREATE_SCHEMES',
-        'EDIT_SCHEMES',
-        'DELETE_SCHEMES',
-        'VIEW_USERS',
-        'MANAGE_ADMINS',
-      ],
-      assignedStates: [],
-      verificationStatus: 'VERIFIED',
+// --- Master data (seeded first; IDs used in User & Job) ---
+const sampleQualifications = [
+  { name: '10th', order: 1 },
+  { name: '12th', order: 2 },
+  { name: 'ITI', order: 3 },
+  { name: 'Graduate', order: 4 },
+  { name: 'Post Graduate', order: 5 },
+  { name: 'Diploma', order: 6 },
+];
+
+const sampleStreams = [
+  { name: 'Arts', order: 1 },
+  { name: 'Science', order: 2 },
+  { name: 'Commerce', order: 3 },
+  { name: 'Engineering', order: 4 },
+  { name: 'General', order: 5 },
+];
+
+const sampleSkillCertificates = [
+  { name: 'Driving License', order: 1 },
+  { name: 'MS Office', order: 2 },
+  { name: 'Tally', order: 3 },
+  { name: 'Nursing Certificate', order: 4 },
+  { name: 'B.Ed', order: 5 },
+  { name: 'CTET', order: 6 },
+  { name: 'Typing (English)', order: 7 },
+  { name: 'Typing (Hindi)', order: 8 },
+];
+
+const sampleJobTypes = [
+  { name: 'Central Government', code: 'CENTRAL', requiresHeight: false, order: 1 },
+  { name: 'State Government', code: 'STATE', requiresHeight: false, order: 2 },
+  { name: 'Defence', code: 'DEFENCE', requiresHeight: true, order: 3 },
+  { name: 'Police', code: 'POLICE', requiresHeight: true, order: 4 },
+  { name: 'Railway', code: 'RAILWAY', requiresHeight: false, order: 5 },
+];
+
+// Build sample users (after master data created - pass IDs)
+function buildSampleUsers(createdQualifications, createdStreams, createdSkills, createdJobTypes) {
+  const qual10 = createdQualifications.find(q => q.name === '10th');
+  const qual12 = createdQualifications.find(q => q.name === '12th');
+  const qualGrad = createdQualifications.find(q => q.name === 'Graduate');
+  const streamArts = createdStreams.find(s => s.name === 'Arts');
+  const streamSci = createdStreams.find(s => s.name === 'Science');
+  const streamCommerce = createdStreams.find(s => s.name === 'Commerce');
+  const streamGen = createdStreams.find(s => s.name === 'General');
+  const jobTypeCentral = createdJobTypes.find(j => j.code === 'CENTRAL');
+  const jobTypeState = createdJobTypes.find(j => j.code === 'STATE');
+  const jobTypeDefence = createdJobTypes.find(j => j.code === 'DEFENCE');
+
+  // Minimal profile for admin roles so profileComplete is true (authController also treats admin roles as complete)
+  const adminProfileMinimal = (name) => ({
+    fullName: name,
+    education: 'Graduate',
+    state: 'All India',
+    district: 'N/A',
+  });
+
+  return [
+    {
+      mobileNumber: '9876543210',
+      role: 'SUPER_ADMIN',
+      adminProfile: {
+        name: 'Super Admin',
+        email: 'admin@rojgaalert.com',
+        permissions: [
+          'CREATE_JOBS',
+          'EDIT_JOBS',
+          'DELETE_JOBS',
+          'CREATE_SCHEMES',
+          'EDIT_SCHEMES',
+          'DELETE_SCHEMES',
+          'VIEW_USERS',
+          'MANAGE_ADMINS',
+        ],
+        assignedStates: [],
+        verificationStatus: 'VERIFIED',
+      },
+      profile: adminProfileMinimal('Super Admin'),
     },
-  },
-  {
-    mobileNumber: '9876543211',
-    role: 'SUBADMIN',
-    adminProfile: {
-      name: 'Sub Admin - Mumbai',
-      email: 'subadmin.mumbai@rojgaalert.com',
-      permissions: [
-        'CREATE_JOBS',
-        'EDIT_JOBS',
-        'CREATE_SCHEMES',
-        'EDIT_SCHEMES',
-        'VIEW_USERS',
-      ],
-      assignedStates: ['Maharashtra'],
-      verificationStatus: 'VERIFIED',
+    {
+      mobileNumber: '9876543209',
+      role: 'ADMIN',
+      adminProfile: {
+        name: 'Admin User',
+        email: 'admin2@rojgaalert.com',
+        permissions: [
+          'CREATE_JOBS',
+          'EDIT_JOBS',
+          'DELETE_JOBS',
+          'CREATE_SCHEMES',
+          'EDIT_SCHEMES',
+          'DELETE_SCHEMES',
+          'VIEW_USERS',
+          'MANAGE_ADMINS',
+        ],
+        assignedStates: [],
+        verificationStatus: 'VERIFIED',
+      },
+      profile: adminProfileMinimal('Admin User'),
     },
-  },
-  {
-    mobileNumber: '9876543212',
-    role: 'SUBADMIN',
-    adminProfile: {
-      name: 'Sub Admin - New Delhi',
-      email: 'subadmin.newdelhi@rojgaalert.com',
-      permissions: [
-        'CREATE_JOBS',
-        'EDIT_JOBS',
-        'CREATE_SCHEMES',
-        'VIEW_USERS',
-      ],
-      assignedStates: ['Delhi'],
-      verificationStatus: 'VERIFIED',
+    {
+      mobileNumber: '9876543208',
+      role: 'SUPER_SUBADMIN',
+      adminProfile: {
+        name: 'Super Sub Admin',
+        email: 'supersub@rojgaalert.com',
+        permissions: [
+          'CREATE_JOBS',
+          'EDIT_JOBS',
+          'DELETE_JOBS',
+          'CREATE_SCHEMES',
+          'EDIT_SCHEMES',
+          'VIEW_USERS',
+        ],
+        assignedStates: ['Maharashtra', 'Gujarat'],
+        verificationStatus: 'VERIFIED',
+      },
+      profile: adminProfileMinimal('Super Sub Admin'),
     },
-  },
-  {
-    mobileNumber: '9876543213',
-    role: 'SUBADMIN',
-    adminProfile: {
-      name: 'Sub Admin - Uttar Pradesh',
-      email: 'subadmin.up@rojgaalert.com',
-      permissions: [
-        'CREATE_JOBS',
-        'EDIT_JOBS',
-        'CREATE_SCHEMES',
-        'EDIT_SCHEMES',
-        'VIEW_USERS',
-      ],
-      assignedStates: ['Uttar Pradesh'],
-      verificationStatus: 'VERIFIED',
+    {
+      mobileNumber: '9876543211',
+      role: 'SUBADMIN',
+      adminProfile: {
+        name: 'Sub Admin - Mumbai',
+        email: 'subadmin.mumbai@rojgaalert.com',
+        permissions: ['CREATE_JOBS', 'EDIT_JOBS', 'CREATE_SCHEMES', 'EDIT_SCHEMES', 'VIEW_USERS'],
+        assignedStates: ['Maharashtra'],
+        verificationStatus: 'VERIFIED',
+      },
+      profile: adminProfileMinimal('Sub Admin - Mumbai'),
     },
-  },
-  {
-    mobileNumber: '9876543214',
-    role: 'SUBADMIN',
-    adminProfile: {
-      name: 'Sub Admin - Bihar',
-      email: 'subadmin.bihar@rojgaalert.com',
-      permissions: [
-        'CREATE_JOBS',
-        'EDIT_JOBS',
-        'CREATE_SCHEMES',
-        'VIEW_USERS',
-      ],
-      assignedStates: ['Bihar'],
-      verificationStatus: 'VERIFIED',
-    },
-  },
-  {
-    mobileNumber: '9876543215',
-    role: 'SUBADMIN',
-    adminProfile: {
-      name: 'Sub Admin - Gujarat',
-      email: 'subadmin.gujarat@rojgaalert.com',
-      permissions: [
-        'CREATE_JOBS',
-        'EDIT_JOBS',
-        'CREATE_SCHEMES',
-        'EDIT_SCHEMES',
-        'VIEW_USERS',
-      ],
-      assignedStates: ['Gujarat'],
-      verificationStatus: 'VERIFIED',
-    },
-  },
-  {
-    mobileNumber: '9876543216',
-    role: 'SUBADMIN',
-    adminProfile: {
-      name: 'Sub Admin - Maharashtra',
-      email: 'subadmin.mh@rojgaalert.com',
-      permissions: [
-        'CREATE_JOBS',
-        'EDIT_JOBS',
-        'CREATE_SCHEMES',
-        'EDIT_SCHEMES',
-        'VIEW_USERS',
-      ],
-      assignedStates: ['Maharashtra'],
-      verificationStatus: 'VERIFIED',
-    },
-  },
-  {
-    mobileNumber: '9876543217',
-    role: 'SUBADMIN',
-    adminProfile: {
-      name: 'Sub Admin - Delhi',
-      email: 'subadmin.del@rojgaalert.com',
-      permissions: [
-        'CREATE_JOBS',
-        'EDIT_JOBS',
-        'CREATE_SCHEMES',
-        'VIEW_USERS',
-      ],
-      assignedStates: ['Delhi'],
-      verificationStatus: 'VERIFIED',
-    },
-  },
-  {
-    mobileNumber: '9876543218',
-    role: 'SUBADMIN',
-    adminProfile: {
-      name: 'Sub Admin - Pune',
-      email: 'subadmin.pune@rojgaalert.com',
-      permissions: [
-        'CREATE_JOBS',
-        'EDIT_JOBS',
-        'CREATE_SCHEMES',
-        'VIEW_USERS',
-      ],
-      assignedStates: ['Maharashtra'],
-      verificationStatus: 'VERIFIED',
-    },
-  },
-  {
-    mobileNumber: '9876543219',
-    role: 'SUBADMIN',
-    adminProfile: {
-      name: 'Sub Admin - Kanpur',
-      email: 'subadmin.kanpur@rojgaalert.com',
-      permissions: [
-        'CREATE_JOBS',
-        'EDIT_JOBS',
-        'VIEW_USERS',
-      ],
-      assignedStates: ['Uttar Pradesh'],
-      verificationStatus: 'VERIFIED',
-    },
-  },
-  {
-    mobileNumber: '9876543220',
-    role: 'SUBADMIN',
-    adminProfile: {
-      name: 'Sub Admin - Kerala',
-      email: 'subadmin.kerala@rojgaalert.com',
-      permissions: [
-        'CREATE_JOBS',
-        'EDIT_JOBS',
-        'CREATE_SCHEMES',
-        'EDIT_SCHEMES',
-        'VIEW_USERS',
-      ],
-      assignedStates: ['Kerala'],
-      verificationStatus: 'VERIFIED',
-    },
-  },
-  // Regular Users
+    { mobileNumber: '9876543212', role: 'SUBADMIN', adminProfile: { name: 'Sub Admin - New Delhi', email: 'subadmin.newdelhi@rojgaalert.com', permissions: ['CREATE_JOBS', 'EDIT_JOBS', 'CREATE_SCHEMES', 'VIEW_USERS'], assignedStates: ['Delhi'], verificationStatus: 'VERIFIED' }, profile: adminProfileMinimal('Sub Admin - New Delhi') },
+    { mobileNumber: '9876543213', role: 'SUBADMIN', adminProfile: { name: 'Sub Admin - Uttar Pradesh', email: 'subadmin.up@rojgaalert.com', permissions: ['CREATE_JOBS', 'EDIT_JOBS', 'CREATE_SCHEMES', 'EDIT_SCHEMES', 'VIEW_USERS'], assignedStates: ['Uttar Pradesh'], verificationStatus: 'VERIFIED' }, profile: adminProfileMinimal('Sub Admin - Uttar Pradesh') },
+    { mobileNumber: '9876543214', role: 'SUBADMIN', adminProfile: { name: 'Sub Admin - Bihar', email: 'subadmin.bihar@rojgaalert.com', permissions: ['CREATE_JOBS', 'EDIT_JOBS', 'CREATE_SCHEMES', 'VIEW_USERS'], assignedStates: ['Bihar'], verificationStatus: 'VERIFIED' }, profile: adminProfileMinimal('Sub Admin - Bihar') },
+    { mobileNumber: '9876543215', role: 'SUBADMIN', adminProfile: { name: 'Sub Admin - Gujarat', email: 'subadmin.gujarat@rojgaalert.com', permissions: ['CREATE_JOBS', 'EDIT_JOBS', 'CREATE_SCHEMES', 'EDIT_SCHEMES', 'VIEW_USERS'], assignedStates: ['Gujarat'], verificationStatus: 'VERIFIED' }, profile: adminProfileMinimal('Sub Admin - Gujarat') },
+    { mobileNumber: '9876543216', role: 'SUBADMIN', adminProfile: { name: 'Sub Admin - Maharashtra', email: 'subadmin.mh@rojgaalert.com', permissions: ['CREATE_JOBS', 'EDIT_JOBS', 'CREATE_SCHEMES', 'EDIT_SCHEMES', 'VIEW_USERS'], assignedStates: ['Maharashtra'], verificationStatus: 'VERIFIED' }, profile: adminProfileMinimal('Sub Admin - Maharashtra') },
+    { mobileNumber: '9876543217', role: 'SUBADMIN', adminProfile: { name: 'Sub Admin - Delhi', email: 'subadmin.del@rojgaalert.com', permissions: ['CREATE_JOBS', 'EDIT_JOBS', 'CREATE_SCHEMES', 'VIEW_USERS'], assignedStates: ['Delhi'], verificationStatus: 'VERIFIED' }, profile: adminProfileMinimal('Sub Admin - Delhi') },
+    { mobileNumber: '9876543218', role: 'SUBADMIN', adminProfile: { name: 'Sub Admin - Pune', email: 'subadmin.pune@rojgaalert.com', permissions: ['CREATE_JOBS', 'EDIT_JOBS', 'CREATE_SCHEMES', 'VIEW_USERS'], assignedStates: ['Maharashtra'], verificationStatus: 'VERIFIED' }, profile: adminProfileMinimal('Sub Admin - Pune') },
+    { mobileNumber: '9876543219', role: 'SUBADMIN', adminProfile: { name: 'Sub Admin - Kanpur', email: 'subadmin.kanpur@rojgaalert.com', permissions: ['CREATE_JOBS', 'EDIT_JOBS', 'VIEW_USERS'], assignedStates: ['Uttar Pradesh'], verificationStatus: 'VERIFIED' }, profile: adminProfileMinimal('Sub Admin - Kanpur') },
+    { mobileNumber: '9876543220', role: 'SUBADMIN', adminProfile: { name: 'Sub Admin - Kerala', email: 'subadmin.kerala@rojgaalert.com', permissions: ['CREATE_JOBS', 'EDIT_JOBS', 'CREATE_SCHEMES', 'EDIT_SCHEMES', 'VIEW_USERS'], assignedStates: ['Kerala'], verificationStatus: 'VERIFIED' }, profile: adminProfileMinimal('Sub Admin - Kerala') },
+  // Regular Users (extended profile with educationEntries, skillsCertificates, jobTypeIds, category, gender, domicile, jobPreference)
   {
     mobileNumber: '9876543221',
     role: 'USER',
@@ -214,8 +173,15 @@ const sampleUsers = [
       fullName: 'Rahul Kumar',
       dateOfBirth: new Date('1998-05-15'),
       education: 'Graduate',
+      educationEntries: qualGrad && streamArts ? [{ qualificationId: qualGrad._id, streamId: streamArts._id, passingYear: 2019 }] : undefined,
       state: 'Maharashtra',
       district: 'Mumbai',
+      category: 'GEN',
+      gender: 'MALE',
+      domicileState: 'Maharashtra',
+      skillsCertificates: createdSkills && createdSkills.length ? [createdSkills[0]._id, createdSkills[1]._id] : [],
+      jobPreference: { preferenceType: 'STATE', stateIds: ['Maharashtra'] },
+      jobTypeIds: jobTypeState && jobTypeCentral ? [jobTypeState._id, jobTypeCentral._id] : [],
       preferredDomains: ['ALL'],
     },
   },
@@ -226,8 +192,15 @@ const sampleUsers = [
       fullName: 'Priya Sharma',
       dateOfBirth: new Date('2000-08-20'),
       education: '12th',
+      educationEntries: qual12 && streamCommerce ? [{ qualificationId: qual12._id, streamId: streamCommerce._id, passingYear: 2018 }] : qual12 && streamArts ? [{ qualificationId: qual12._id, streamId: streamArts._id, passingYear: 2018 }] : undefined,
       state: 'Delhi',
       district: 'New Delhi',
+      category: 'GEN_EWS',
+      gender: 'FEMALE',
+      domicileState: 'Delhi',
+      skillsCertificates: createdSkills && createdSkills.length > 2 ? [createdSkills[2]._id] : [],
+      jobPreference: { preferenceType: 'INDIA' },
+      jobTypeIds: jobTypeState ? [jobTypeState._id] : [],
       preferredDomains: ['Teaching', 'Clerk'],
     },
   },
@@ -238,8 +211,15 @@ const sampleUsers = [
       fullName: 'Amit Singh',
       dateOfBirth: new Date('1995-03-10'),
       education: 'ITI',
+      educationEntries: createdQualifications && createdQualifications.length > 2 ? [{ qualificationId: createdQualifications[2]._id, streamId: streamGen ? streamGen._id : null, passingYear: 2014 }] : undefined,
       state: 'Uttar Pradesh',
       district: 'Lucknow',
+      category: 'BC',
+      gender: 'MALE',
+      domicileState: 'Uttar Pradesh',
+      skillsCertificates: [],
+      jobPreference: { preferenceType: 'STATE', stateIds: ['Uttar Pradesh'] },
+      jobTypeIds: jobTypeCentral ? [jobTypeCentral._id] : [],
       preferredDomains: ['Technical', 'Apprentice'],
     },
   },
@@ -250,8 +230,15 @@ const sampleUsers = [
       fullName: 'Sunita Devi',
       dateOfBirth: new Date('1999-11-25'),
       education: '10th',
+      educationEntries: qual10 && streamGen ? [{ qualificationId: qual10._id, streamId: streamGen._id, passingYear: 2017 }] : undefined,
       state: 'Bihar',
       district: 'Patna',
+      category: 'SC',
+      gender: 'FEMALE',
+      domicileState: 'Bihar',
+      skillsCertificates: createdSkills && createdSkills.length > 3 ? [createdSkills[3]._id] : [],
+      jobPreference: { preferenceType: 'INDIA' },
+      jobTypeIds: [],
       preferredDomains: ['Health', 'Clerk'],
     },
   },
@@ -262,8 +249,16 @@ const sampleUsers = [
       fullName: 'Vikram Patel',
       dateOfBirth: new Date('1997-07-18'),
       education: 'Graduate',
+      educationEntries: qualGrad && streamSci ? [{ qualificationId: qualGrad._id, streamId: streamSci._id, passingYear: 2019 }] : undefined,
       state: 'Gujarat',
       district: 'Ahmedabad',
+      category: 'GEN',
+      gender: 'MALE',
+      domicileState: 'Gujarat',
+      height: 168,
+      skillsCertificates: [],
+      jobPreference: { preferenceType: 'STATE', stateIds: ['Gujarat', 'Maharashtra'] },
+      jobTypeIds: jobTypeDefence && jobTypeState ? [jobTypeDefence._id, jobTypeState._id] : [],
       preferredDomains: ['Police', 'Defence'],
     },
   },
@@ -274,8 +269,15 @@ const sampleUsers = [
       fullName: 'Anjali Mehta',
       dateOfBirth: new Date('1996-09-12'),
       education: 'Graduate',
+      educationEntries: qualGrad && streamArts ? [{ qualificationId: qualGrad._id, streamId: streamArts._id, passingYear: 2018 }] : undefined,
       state: 'Maharashtra',
       district: 'Pune',
+      category: 'GEN',
+      gender: 'FEMALE',
+      domicileState: 'Maharashtra',
+      skillsCertificates: createdSkills && createdSkills.length > 4 ? [createdSkills[4]._id, createdSkills[5]._id] : [],
+      jobPreference: { preferenceType: 'STATE', stateIds: ['Maharashtra'] },
+      jobTypeIds: jobTypeState ? [jobTypeState._id] : [],
       preferredDomains: ['Teaching', 'Health'],
     },
   },
@@ -286,8 +288,15 @@ const sampleUsers = [
       fullName: 'Rajesh Yadav',
       dateOfBirth: new Date('1994-12-05'),
       education: '12th',
+      educationEntries: qual12 && streamCommerce ? [{ qualificationId: qual12._id, streamId: streamCommerce._id, passingYear: 2012 }] : qual12 && streamArts ? [{ qualificationId: qual12._id, streamId: streamArts._id, passingYear: 2012 }] : undefined,
       state: 'Uttar Pradesh',
       district: 'Kanpur',
+      category: 'BC',
+      gender: 'MALE',
+      domicileState: 'Uttar Pradesh',
+      skillsCertificates: createdSkills && createdSkills.length > 6 ? [createdSkills[6]._id] : [],
+      jobPreference: { preferenceType: 'INDIA' },
+      jobTypeIds: jobTypeCentral && jobTypeState ? [jobTypeCentral._id, jobTypeState._id] : [],
       preferredDomains: ['Railway', 'Technical'],
     },
   },
@@ -298,183 +307,98 @@ const sampleUsers = [
       fullName: 'Kavita Nair',
       dateOfBirth: new Date('2001-02-28'),
       education: '10th',
+      educationEntries: qual10 && streamGen ? [{ qualificationId: qual10._id, streamId: streamGen._id, passingYear: 2019 }] : undefined,
       state: 'Kerala',
       district: 'Kochi',
+      category: 'GEN',
+      gender: 'FEMALE',
+      domicileState: 'Kerala',
+      skillsCertificates: [],
+      jobPreference: { preferenceType: 'STATE', stateIds: ['Kerala'] },
+      jobTypeIds: [],
       preferredDomains: ['Clerk', 'Apprentice'],
     },
   },
-];
+  ];
+}
 
-const sampleJobs = [
-  {
-    title: 'Constable Recruitment - Maharashtra Police',
-    jobType: 'STATE',
-    domain: 'Police',
-    state: 'Maharashtra',
-    education: '12th',
-    ageMin: 18,
-    ageMax: 28,
-    lastDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
-    description: 'Recruitment for Constable position in Maharashtra Police Force. Physical fitness test required.',
-    applicationLink: 'https://example.com/police-recruitment',
-    vacancyCount: 5000,
-    salaryRange: {
-      min: 25000,
-      max: 35000,
-      currency: 'INR',
-    },
-    requirements: ['Physical Fitness Test', 'Written Examination', 'Medical Test'],
+function buildSampleJobs(createdQualifications, createdStreams, createdBy) {
+  const qual10 = createdQualifications.find(q => q.name === '10th');
+  const qual12 = createdQualifications.find(q => q.name === '12th');
+  const qualGrad = createdQualifications.find(q => q.name === 'Graduate');
+  const qualITI = createdQualifications.find(q => q.name === 'ITI');
+  const streamGen = createdStreams.find(s => s.name === 'General');
+  const streamArts = createdStreams.find(s => s.name === 'Arts');
+  const base = new Date(Date.now() + 20 * 24 * 60 * 60 * 1000);
+  const jobBase = (title, jobType, domain, state, education, ageMin, ageMax, days, desc, link, vacancy, salaryMin, salaryMax, reqs, featured) => ({
+    title,
+    jobType,
+    domain,
+    state,
+    education,
+    ageMin,
+    ageMax,
+    lastDate: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
+    description: desc,
+    applicationLink: link,
+    vacancyCount: vacancy,
+    salaryRange: { min: salaryMin, max: salaryMax, currency: 'INR' },
+    requirements: reqs,
     isActive: true,
-    isFeatured: true,
-  },
-  {
-    title: 'Railway Group D Recruitment',
-    jobType: 'CENTRAL',
-    domain: 'Railway',
-    state: 'All India',
-    education: '10th',
-    ageMin: 18,
-    ageMax: 33,
-    lastDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
-    description: 'Indian Railways Group D recruitment for various posts across India.',
-    applicationLink: 'https://example.com/railway-recruitment',
-    vacancyCount: 10000,
-    salaryRange: {
-      min: 18000,
-      max: 22000,
-      currency: 'INR',
+    isFeatured: !!featured,
+    createdBy,
+    updatedBy: createdBy,
+    status: 'APPROVED',
+    dates: [
+      { label: 'Application Start', date: new Date(), time: '00:00' },
+      { label: 'Last Date', date: new Date(Date.now() + days * 24 * 60 * 60 * 1000), time: '23:59' },
+    ],
+    eligibleStates: state === 'All India' ? [] : [state],
+    ageLimit: { sameForAll: true, min: ageMin, max: ageMax },
+    vacancySeats: [{ postName: title.slice(0, 30), totalSeats: vacancy }],
+    misc: '',
+    sourceLink: link,
+  });
+  const jobs = [
+    {
+      ...jobBase('Constable Recruitment - Maharashtra Police', 'STATE', 'Police', 'Maharashtra', '12th', 18, 28, 90, 'Recruitment for Constable position in Maharashtra Police Force. Physical fitness test required.', 'https://example.com/police-recruitment', 5000, 25000, 35000, ['Physical Fitness Test', 'Written Examination', 'Medical Test'], true),
+      eligibilityRules: qual12 && streamGen ? [{ logic: 'AND', conditions: [{ qualificationId: qual12._id, streamId: streamGen._id }] }] : [],
     },
-    requirements: ['10th Pass', 'Physical Test'],
-    isActive: true,
-    isFeatured: true,
-  },
-  {
-    title: 'Indian Army Soldier Recruitment',
-    jobType: 'CENTRAL',
-    domain: 'Defence',
-    state: 'All India',
-    education: '10th',
-    ageMin: 17,
-    ageMax: 23,
-    lastDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
-    description: 'Recruitment for Soldier (General Duty) in Indian Army.',
-    applicationLink: 'https://example.com/army-recruitment',
-    vacancyCount: 50000,
-    salaryRange: {
-      min: 30000,
-      max: 40000,
-      currency: 'INR',
+    {
+      ...jobBase('Railway Group D Recruitment', 'CENTRAL', 'Railway', 'All India', '10th', 18, 33, 60, 'Indian Railways Group D recruitment for various posts across India.', 'https://example.com/railway-recruitment', 10000, 18000, 22000, ['10th Pass', 'Physical Test'], true),
+      eligibleStates: [],
+      eligibilityRules: qual10 && streamGen ? [{ logic: 'AND', conditions: [{ qualificationId: qual10._id, streamId: streamGen._id }] }] : [],
     },
-    requirements: ['Physical Fitness', 'Medical Examination', 'Written Test'],
-    isActive: true,
-    isFeatured: true,
-  },
-  {
-    title: 'Primary Teacher Recruitment - Delhi',
-    jobType: 'STATE',
-    domain: 'Teaching',
-    state: 'Delhi',
-    education: 'Graduate',
-    ageMin: 21,
-    ageMax: 35,
-    lastDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-    description: 'Recruitment for Primary Teacher position in Delhi Government Schools.',
-    applicationLink: 'https://example.com/teacher-recruitment',
-    vacancyCount: 2000,
-    salaryRange: {
-      min: 35000,
-      max: 45000,
-      currency: 'INR',
+    {
+      ...jobBase('Indian Army Soldier Recruitment', 'CENTRAL', 'Defence', 'All India', '10th', 17, 23, 45, 'Recruitment for Soldier (General Duty) in Indian Army.', 'https://example.com/army-recruitment', 50000, 30000, 40000, ['Physical Fitness', 'Medical Examination', 'Written Test'], true),
+      eligibleStates: [],
+      eligibilityRules: qual10 ? [{ logic: 'AND', conditions: [{ qualificationId: qual10._id, streamId: null }] }] : [],
     },
-    requirements: ['Graduate with B.Ed', 'CTET Qualified'],
-    isActive: true,
-    isFeatured: false,
-  },
-  {
-    title: 'Staff Nurse Recruitment - UP Health',
-    jobType: 'STATE',
-    domain: 'Health',
-    state: 'Uttar Pradesh',
-    education: '12th',
-    ageMin: 18,
-    ageMax: 35,
-    lastDate: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000), // 75 days from now
-    description: 'Recruitment for Staff Nurse positions in UP Health Department.',
-    applicationLink: 'https://example.com/nurse-recruitment',
-    vacancyCount: 3000,
-    salaryRange: {
-      min: 28000,
-      max: 35000,
-      currency: 'INR',
+    {
+      ...jobBase('Primary Teacher Recruitment - Delhi', 'STATE', 'Teaching', 'Delhi', 'Graduate', 21, 35, 30, 'Recruitment for Primary Teacher position in Delhi Government Schools.', 'https://example.com/teacher-recruitment', 2000, 35000, 45000, ['Graduate with B.Ed', 'CTET Qualified'], false),
+      eligibilityRules: qualGrad && streamArts ? [{ logic: 'AND', conditions: [{ qualificationId: qualGrad._id, streamId: streamArts._id }] }] : [],
     },
-    requirements: ['12th with Nursing Diploma', 'Registration Certificate'],
-    isActive: true,
-    isFeatured: false,
-  },
-  {
-    title: 'Junior Clerk - Bihar Secretariat',
-    jobType: 'STATE',
-    domain: 'Clerk',
-    state: 'Bihar',
-    education: 'Graduate',
-    ageMin: 21,
-    ageMax: 37,
-    lastDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
-    description: 'Recruitment for Junior Clerk positions in Bihar Secretariat.',
-    applicationLink: 'https://example.com/clerk-recruitment',
-    vacancyCount: 1500,
-    salaryRange: {
-      min: 22000,
-      max: 30000,
-      currency: 'INR',
+    {
+      ...jobBase('Staff Nurse Recruitment - UP Health', 'STATE', 'Health', 'Uttar Pradesh', '12th', 18, 35, 75, 'Recruitment for Staff Nurse positions in UP Health Department.', 'https://example.com/nurse-recruitment', 3000, 28000, 35000, ['12th with Nursing Diploma', 'Registration Certificate'], false),
+      eligibilityRules: qual12 ? [{ logic: 'AND', conditions: [{ qualificationId: qual12._id, streamId: null }] }] : [],
     },
-    requirements: ['Graduate', 'Typing Speed Test'],
-    isActive: true,
-    isFeatured: false,
-  },
-  {
-    title: 'ITI Apprentice - Central Government',
-    jobType: 'CENTRAL',
-    domain: 'Apprentice',
-    state: 'All India',
-    education: 'ITI',
-    ageMin: 18,
-    ageMax: 25,
-    lastDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000), // 20 days from now
-    description: 'Apprenticeship opportunities for ITI candidates in various central government departments.',
-    applicationLink: 'https://example.com/apprentice',
-    vacancyCount: 5000,
-    salaryRange: {
-      min: 15000,
-      max: 20000,
-      currency: 'INR',
+    {
+      ...jobBase('Junior Clerk - Bihar Secretariat', 'STATE', 'Clerk', 'Bihar', 'Graduate', 21, 37, 60, 'Recruitment for Junior Clerk positions in Bihar Secretariat.', 'https://example.com/clerk-recruitment', 1500, 22000, 30000, ['Graduate', 'Typing Speed Test'], false),
+      eligibilityRules: qualGrad ? [{ logic: 'AND', conditions: [{ qualificationId: qualGrad._id, streamId: null }] }] : [],
     },
-    requirements: ['ITI Certificate', 'Relevant Trade'],
-    isActive: true,
-    isFeatured: false,
-  },
-  {
-    title: 'Technical Assistant - Railway',
-    jobType: 'CENTRAL',
-    domain: 'Technical',
-    state: 'All India',
-    education: 'Graduate',
-    ageMin: 21,
-    ageMax: 30,
-    lastDate: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000), // 50 days from now
-    description: 'Recruitment for Technical Assistant positions in Indian Railways.',
-    applicationLink: 'https://example.com/technical-assistant',
-    vacancyCount: 800,
-    salaryRange: {
-      min: 35000,
-      max: 45000,
-      currency: 'INR',
+    {
+      ...jobBase('ITI Apprentice - Central Government', 'CENTRAL', 'Apprentice', 'All India', 'ITI', 18, 25, 20, 'Apprenticeship opportunities for ITI candidates in various central government departments.', 'https://example.com/apprentice', 5000, 15000, 20000, ['ITI Certificate', 'Relevant Trade'], false),
+      eligibleStates: [],
+      eligibilityRules: qualITI ? [{ logic: 'AND', conditions: [{ qualificationId: qualITI._id, streamId: null }] }] : [],
     },
-    requirements: ['Engineering Degree', 'Technical Aptitude Test'],
-    isActive: true,
-    isFeatured: false,
-  },
-];
+    {
+      ...jobBase('Technical Assistant - Railway', 'CENTRAL', 'Technical', 'All India', 'Graduate', 21, 30, 50, 'Recruitment for Technical Assistant positions in Indian Railways.', 'https://example.com/technical-assistant', 800, 35000, 45000, ['Engineering Degree', 'Technical Aptitude Test'], false),
+      eligibleStates: [],
+      eligibilityRules: qualGrad ? [{ logic: 'AND', conditions: [{ qualificationId: qualGrad._id, streamId: null }] }] : [],
+    },
+  ];
+  return jobs;
+}
 
 const sampleSchemes = [
   {
@@ -603,35 +527,53 @@ const seedDatabase = async () => {
   try {
     console.log('Starting database seeding...\n');
 
-    // Clear existing data (optional - comment out if you want to keep existing data)
+    // Clear existing data (order: dependents first, then master)
     console.log('Clearing existing data...');
-    await User.deleteMany({});
-    await Job.deleteMany({});
-    await Scheme.deleteMany({});
-    await UserPreference.deleteMany({});
     await Notification.deleteMany({});
     await AuditLog.deleteMany({});
     await Device.deleteMany({});
     await OTP.deleteMany({});
+    await UserPreference.deleteMany({});
+    await Job.deleteMany({});
+    await Scheme.deleteMany({});
+    await User.deleteMany({});
+    await Qualification.deleteMany({});
+    await Stream.deleteMany({});
+    await SkillCertificate.deleteMany({});
+    await JobType.deleteMany({});
     console.log('Existing data cleared.\n');
 
-    // Seed Users
+    // Seed Master Data first
+    console.log('Seeding qualifications...');
+    const createdQualifications = await Qualification.insertMany(sampleQualifications);
+    console.log(`✓ Created ${createdQualifications.length} qualifications\n`);
+
+    console.log('Seeding streams...');
+    const createdStreams = await Stream.insertMany(sampleStreams);
+    console.log(`✓ Created ${createdStreams.length} streams\n`);
+
+    console.log('Seeding skills & certificates...');
+    const createdSkillCertificates = await SkillCertificate.insertMany(sampleSkillCertificates);
+    console.log(`✓ Created ${createdSkillCertificates.length} skills/certificates\n`);
+
+    console.log('Seeding job types...');
+    const createdJobTypes = await JobType.insertMany(sampleJobTypes);
+    console.log(`✓ Created ${createdJobTypes.length} job types\n`);
+
+    // Seed Users (with refs to master data)
     console.log('Seeding users...');
+    const sampleUsers = buildSampleUsers(createdQualifications, createdStreams, createdSkillCertificates, createdJobTypes);
     const createdUsers = await User.insertMany(sampleUsers);
     console.log(`✓ Created ${createdUsers.length} users\n`);
 
-    // Seed Jobs (need to assign createdBy)
+    // Seed Jobs (extended fields + refs to qualifications/streams)
     console.log('Seeding jobs...');
     const mainSuperAdmin = createdUsers.find(u => u.mobileNumber === '9876543210');
     if (!mainSuperAdmin) {
       throw new Error('Super admin (9876543210) not found in seeded users');
     }
-    const jobsWithCreator = sampleJobs.map(job => ({
-      ...job,
-      createdBy: mainSuperAdmin._id,
-      updatedBy: mainSuperAdmin._id,
-    }));
-    const createdJobs = await Job.insertMany(jobsWithCreator);
+    const sampleJobs = buildSampleJobs(createdQualifications, createdStreams, mainSuperAdmin._id);
+    const createdJobs = await Job.insertMany(sampleJobs);
     console.log(`✓ Created ${createdJobs.length} jobs\n`);
 
     // Seed Schemes (need to assign createdBy)
@@ -759,12 +701,12 @@ const seedDatabase = async () => {
 
     // Seed Audit Logs for admin actions
     console.log('Seeding audit logs...');
-    const allAdminUsers = createdUsers.filter(u => u.role === 'ADMIN');
     const allSubadminUsers = createdUsers.filter(u => u.role === 'SUBADMIN');
-    const superAdminForAudit = allAdminUsers.find(u => u.mobileNumber === '9876543210');
+    const superAdminForAudit = createdUsers.find(u => u.mobileNumber === '9876543210');
     const auditLogEntries = [];
     
     // Create audit logs for subadmin verification
+    const allSuperSubadmins = createdUsers.filter(u => u.role === 'SUPER_SUBADMIN');
     if (superAdminForAudit) {
       allSubadminUsers.forEach(subadmin => {
         auditLogEntries.push({
@@ -789,6 +731,19 @@ const seedDatabase = async () => {
           status: 'SUCCESS',
         });
       });
+      allSuperSubadmins.forEach(superSub => {
+        auditLogEntries.push({
+          action: 'SUPER_SUBADMIN_CREATED',
+          performedBy: superAdminForAudit._id,
+          targetUser: superSub._id,
+          details: {
+            mobileNumber: superSub.mobileNumber,
+            name: superSub.adminProfile.name,
+            assignedStates: superSub.adminProfile.assignedStates,
+          },
+          status: 'SUCCESS',
+        });
+      });
     }
     
     const createdAuditLogs = await AuditLog.insertMany(auditLogEntries);
@@ -798,13 +753,18 @@ const seedDatabase = async () => {
     console.log('\n' + '='.repeat(60));
     console.log('SUMMARY');
     console.log('='.repeat(60));
+    const finalSuperAdminUsers = createdUsers.filter(u => u.role === 'SUPER_ADMIN');
     const finalAdminUsers = createdUsers.filter(u => u.role === 'ADMIN');
+    const finalSuperSubadmins = createdUsers.filter(u => u.role === 'SUPER_SUBADMIN');
     const finalSubadminUsers = createdUsers.filter(u => u.role === 'SUBADMIN');
     const finalRegularUsers = createdUsers.filter(u => u.role === 'USER');
-    const finalSuperAdmin = finalAdminUsers.find(u => u.mobileNumber === '9876543210');
-    
-    console.log(`- Users: ${createdUsers.length} (1 Super Admin, ${finalSubadminUsers.length} Sub Admins, ${finalRegularUsers.length} Regular Users)`);
-    console.log(`\n📋 ALL MOBILE NUMBERS WITH ROLES (OTP: 123456 for all):`);
+    const superAdminUser = createdUsers.find(u => u.mobileNumber === '9876543210');
+
+    console.log(`- Qualifications: ${createdQualifications.length}`);
+    console.log(`- Streams: ${createdStreams.length}`);
+    console.log(`- Skills/Certificates: ${createdSkillCertificates.length}`);
+    console.log(`- Job Types: ${createdJobTypes.length}`);
+    console.log(`- Users: ${createdUsers.length} (${finalSuperAdminUsers.length} Super Admin, ${finalAdminUsers.length} Admin, ${finalSuperSubadmins.length} Super Sub-Admin, ${finalSubadminUsers.length} Sub-Admin, ${finalRegularUsers.length} Users)`);
     console.log(`- Jobs: ${createdJobs.length}`);
     console.log(`- Schemes: ${createdSchemes.length}`);
     console.log(`- User Preferences: ${userPreferences.length}`);
@@ -812,13 +772,25 @@ const seedDatabase = async () => {
     console.log(`- Device Entries: ${createdDevices.length}`);
     console.log(`- Notifications: ${createdNotifications.length}`);
     console.log(`- Audit Logs: ${createdAuditLogs.length}`);
-    
+
     console.log('\n' + '='.repeat(60));
     console.log('LOGIN CREDENTIALS (OTP: 123456 for all numbers - Hardcoded, NO Fast2SMS)');
     console.log('='.repeat(60));
-    if (finalSuperAdmin) {
+    if (superAdminUser) {
       console.log('\n👑 SUPER ADMIN:');
-      console.log(`  ${finalSuperAdmin.mobileNumber} - ${finalSuperAdmin.adminProfile.name} (All States, All Permissions)`);
+      console.log(`  ${superAdminUser.mobileNumber} - ${superAdminUser.adminProfile.name} (All States, All Permissions)`);
+    }
+    if (finalAdminUsers.length) {
+      console.log('\n🔐 ADMINS:');
+      finalAdminUsers.forEach(user => {
+        console.log(`  ${user.mobileNumber} - ${user.adminProfile.name}`);
+      });
+    }
+    if (finalSuperSubadmins.length) {
+      console.log('\n📋 SUPER SUB-ADMINS:');
+      finalSuperSubadmins.forEach(user => {
+        console.log(`  ${user.mobileNumber} - ${user.adminProfile.name} (${user.adminProfile.assignedStates.length ? user.adminProfile.assignedStates.join(', ') : 'No States'})`);
+      });
     }
     console.log('\n📱 SUB ADMINS:');
     finalSubadminUsers.forEach(user => {

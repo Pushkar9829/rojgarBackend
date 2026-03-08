@@ -1,6 +1,7 @@
 const Job = require('../models/Job');
 const User = require('../models/User');
 const { checkJobEligibility } = require('../utils/eligibility');
+const { askAboutJob } = require('../utils/gemini');
 
 /**
  * Get all jobs with filters
@@ -26,6 +27,10 @@ const getJobs = async (req, res, next) => {
 
     // Build filter object
     const filter = {};
+    const isAdminRole = req.user && ['ADMIN', 'SUBADMIN', 'SUPER_ADMIN', 'SUPER_SUBADMIN'].includes(req.user.role);
+    if (!isAdminRole) {
+      filter.$or = [{ status: 'APPROVED' }, { status: { $exists: false } }, { status: null }];
+    }
 
     if (jobType) filter.jobType = jobType;
     if (domain) filter.domain = domain;
@@ -100,6 +105,14 @@ const getJobById = async (req, res, next) => {
         message: 'Job not found',
       });
     }
+    const isAdminRole = req.user && ['ADMIN', 'SUBADMIN', 'SUPER_ADMIN', 'SUPER_SUBADMIN'].includes(req.user.role);
+    const approved = job.status === 'APPROVED' || job.status == null;
+    if (!isAdminRole && !approved) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job not found',
+      });
+    }
 
     console.log('[jobController] Job found:', {
       id: job._id,
@@ -167,8 +180,9 @@ const getEligibleJobs = async (req, res, next) => {
       sort = '-createdAt',
     } = req.query;
 
-    // Build base filter
+    // Build base filter (only approved jobs for app users; treat missing status as approved)
     const filter = {
+      $or: [{ status: 'APPROVED' }, { status: { $exists: false } }, { status: null }],
       isActive: true,
       lastDate: { $gte: new Date() }, // Only active jobs with future last date
     };
@@ -243,8 +257,50 @@ const getEligibleJobs = async (req, res, next) => {
   }
 };
 
+/**
+ * Ask a question about a job (Gemini). Protected.
+ * POST /api/jobs/:id/ask body: { question: string }
+ */
+const askJob = async (req, res, next) => {
+  try {
+    console.log('[jobController] askJob called', { jobId: req.params.id, userId: req.user?._id, questionLength: req.body?.question?.length });
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      console.log('[jobController] askJob job not found:', req.params.id);
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+    const isAdminRole = req.user && ['ADMIN', 'SUBADMIN', 'SUPER_ADMIN', 'SUPER_SUBADMIN'].includes(req.user.role);
+    const approved = job.status === 'APPROVED' || job.status == null;
+    if (!isAdminRole && !approved) {
+      console.log('[jobController] askJob access denied - job not approved');
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+    const question = req.body?.question?.trim();
+    if (!question) {
+      console.log('[jobController] askJob missing question');
+      return res.status(400).json({ success: false, message: 'Question is required' });
+    }
+    const answer = await askAboutJob(job, question);
+    console.log('[jobController] askJob success', { jobId: job._id, answerLength: answer?.length });
+    res.status(200).json({
+      success: true,
+      data: { answer },
+    });
+  } catch (err) {
+    console.error('[jobController] askJob error:', err.message);
+    if (err.message === 'GEMINI_API_KEY is not set') {
+      return res.status(503).json({
+        success: false,
+        message: 'Ask feature is not configured. Please set GEMINI_API_KEY.',
+      });
+    }
+    next(err);
+  }
+};
+
 module.exports = {
   getJobs,
   getJobById,
   getEligibleJobs,
+  askJob,
 };

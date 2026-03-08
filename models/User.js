@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['USER', 'ADMIN', 'SUBADMIN'],
+      enum: ['USER', 'ADMIN', 'SUBADMIN', 'SUPER_ADMIN', 'SUPER_SUBADMIN'],
       default: 'USER',
       index: true,
     },
@@ -35,9 +35,53 @@ const userSchema = new mongoose.Schema(
         min: [17, 'Age must be at least 17'],
         max: [100, 'Age must be less than 100'],
       },
+      category: {
+        type: String,
+        enum: ['GEN', 'GEN_EWS', 'EBC', 'BC', 'SC', 'ST'],
+        index: true,
+      },
+      gender: {
+        type: String,
+        enum: ['MALE', 'FEMALE', 'OTHER'],
+        index: true,
+      },
+      domicileState: {
+        type: String,
+        index: true,
+      },
       education: {
         type: String,
         enum: ['10th', '12th', 'ITI', 'Graduate'],
+      },
+      educationEntries: {
+        type: [
+          {
+            qualificationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Qualification' },
+            streamId: { type: mongoose.Schema.Types.ObjectId, ref: 'Stream' },
+            passingYear: { type: Number },
+          },
+        ],
+        default: undefined,
+      },
+      skillsCertificates: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'SkillCertificate',
+        },
+      ],
+      jobPreference: {
+        preferenceType: { type: String, enum: ['INDIA', 'STATE'], default: 'INDIA' },
+        stateIds: [{ type: String }],
+      },
+      jobTypeIds: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'JobType',
+        },
+      ],
+      height: {
+        type: Number,
+        min: [0, 'Height must be positive'],
       },
       state: {
         type: String,
@@ -65,7 +109,7 @@ const userSchema = new mongoose.Schema(
       name: {
         type: String,
         required: function() {
-          return this.role === 'ADMIN' || this.role === 'SUBADMIN';
+          return ['ADMIN', 'SUBADMIN', 'SUPER_ADMIN', 'SUPER_SUBADMIN'].includes(this.role);
         },
       },
       email: {
